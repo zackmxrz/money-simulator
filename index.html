@@ -1,0 +1,3100 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Simulator Ultimate - Expansión V3</title>
+    <style>
+        :root {
+            --bg-main: #14141e;
+            --bg-surface: #1e1e2d;
+            --bg-card: #27273a;
+            --bg-hover: #32324a;
+            --accent: #fbc531;
+            --accent-hover: #e1b12c;
+            --text-main: #ffffff;
+            --text-sec: #a1a1aa;
+            --pos: #4cd137;
+            --neg: #e84118;
+            --border: #3f3f5a;
+            
+            --rarity-common: #b0c3d9;
+            --rarity-uncommon: #5e98d9;
+            --rarity-rare: #4b69ff;
+            --rarity-epic: #8847ff;
+            --rarity-legendary: #d32ce6;
+            --rarity-mythic: #eb4b4b;
+            --rarity-secret: #ff00ff;
+
+            --soil: #5c3a21;
+            --soil-ready: #3a5c21;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            position: relative;
+        }
+
+        .shake { animation: shake 0.5s; }
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        /* Topbar */
+        .topbar {
+            background-color: var(--bg-surface);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .title {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: text-shadow 0.2s;
+        }
+        .title:hover { text-shadow: 0 0 10px var(--accent); }
+
+        .stats-container {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .stat-box {
+            background-color: var(--bg-card);
+            padding: 5px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            text-align: center;
+            min-width: 120px;
+        }
+
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-sec);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .stat-value.green { color: var(--pos); }
+
+        /* Navbar */
+        .navbar {
+            background-color: var(--bg-surface);
+            display: flex;
+            overflow-x: auto;
+            border-bottom: 1px solid var(--border);
+            padding: 0 20px;
+        }
+
+        .navbar::-webkit-scrollbar { height: 6px; }
+        .navbar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+        .navbar::-webkit-scrollbar-track { background: var(--bg-main); }
+
+        .nav-item {
+            padding: 15px 20px;
+            cursor: pointer;
+            color: var(--text-sec);
+            font-weight: 500;
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .nav-item:hover { color: var(--text-main); }
+        .nav-item.active {
+            color: var(--accent);
+            border-bottom: 2px solid var(--accent);
+        }
+
+        /* Main Content */
+        .content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .tab-content { display: none; animation: fadeIn 0.3s; }
+        .tab-content.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        /* Grid Layouts */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        /* Cards */
+        .card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            transition: transform 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover { transform: translateY(-2px); border-color: var(--accent); }
+        .card.locked { opacity: 0.5; pointer-events: none; border-color: var(--neg); filter: grayscale(80%); }
+
+        .card-header {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .card-icon {
+            font-size: 32px;
+            background: var(--bg-surface);
+            width: 60px;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-radius: 12px;
+        }
+
+        .card-info h3 { font-size: 16px; margin-bottom: 5px; }
+        .card-info p { font-size: 12px; color: var(--text-sec); }
+        .card-stats { font-size: 13px; color: var(--pos); font-weight: bold; }
+
+        /* Buttons */
+        .btn {
+            background-color: transparent;
+            color: var(--text-main);
+            border: 1px solid var(--border);
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+            width: 100%;
+            text-align: center;
+        }
+
+        .btn:hover:not(:disabled) { background-color: var(--bg-hover); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-buy { border-color: var(--border); background-color: var(--bg-surface); }
+        .btn-buy:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+        .btn-action { background-color: var(--accent); color: #000; border: none; }
+        .btn-action:hover:not(:disabled) { background-color: var(--accent-hover); }
+        .btn-danger { background-color: var(--neg); color: #fff; border: none; }
+        .btn-success { background-color: var(--pos); color: #fff; border: none; }
+        .btn-success:hover:not(:disabled) { filter: brightness(1.2); }
+
+        /* Progress Bar */
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background-color: var(--bg-surface);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: auto;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: var(--accent);
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        /* Notifications */
+        .notif-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 9999;
+        }
+
+        .notif {
+            background-color: var(--bg-card);
+            border-left: 4px solid var(--accent);
+            padding: 15px 20px;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            animation: slideIn 0.3s, fadeOut 0.3s 2.7s forwards;
+        }
+        .notif.success { border-color: var(--pos); }
+        .notif.error { border-color: var(--neg); }
+
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+        @keyframes fadeOut { to { opacity: 0; transform: translateX(100%); } }
+
+        /* Floating Numbers */
+        .floating-num {
+            position: absolute;
+            color: var(--pos);
+            font-weight: bold;
+            pointer-events: none;
+            animation: floatUp 1s ease-out forwards;
+            z-index: 1000;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(0) scale(1); opacity: 1; }
+            100% { transform: translateY(-50px) scale(1.5); opacity: 0; }
+        }
+
+        /* Modals */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10000;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .modal.show { opacity: 1; pointer-events: auto; }
+        
+        .modal-content {
+            background: var(--bg-surface);
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        /* CS2 Case Styles */
+        .case-spinner {
+            width: 100%;
+            height: 120px;
+            background: var(--bg-main);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            margin: 20px 0;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+        }
+        .case-track {
+            display: flex;
+            height: 100%;
+            transition: transform 6s cubic-bezier(0.1, 0, 0, 1);
+            will-change: transform;
+        }
+        .case-item {
+            min-width: 100px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-right: 1px solid var(--border);
+            background: linear-gradient(to bottom, var(--bg-card), var(--bg-main));
+            position: relative;
+        }
+        .case-item::after {
+            content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 4px;
+            background: var(--item-color);
+        }
+        .case-item-icon { font-size: 30px; }
+        .case-item-name { font-size: 10px; margin-top: 5px; text-align: center; padding: 0 5px; }
+        .case-line {
+            position: absolute;
+            top: 0; left: 50%;
+            width: 2px; height: 100%;
+            background: var(--accent);
+            transform: translateX(-50%);
+            box-shadow: 0 0 10px var(--accent);
+            z-index: 10;
+        }
+
+        /* Casino & Inputs */
+        .casino-area { background: var(--bg-card); padding: 20px; border-radius: 12px; margin-bottom: 20px; text-align: center;}
+        .casino-controls { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
+        .casino-input { background: var(--bg-main); border: 1px solid var(--border); color: white; padding: 10px; border-radius: 8px; width: 150px; text-align: center; }
+        .card-playing { display: inline-block; background: white; color: black; padding: 10px 15px; border-radius: 5px; font-weight: bold; margin: 5px; font-size: 20px;}
+        .card-playing.red { color: red; }
+
+        /* Stock Chart Simulation */
+        .stock-row { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--border); }
+        .stock-row:last-child { border-bottom: none; }
+        .stock-trend-up { color: var(--pos); }
+        .stock-trend-down { color: var(--neg); }
+
+        /* Inventory & Collection */
+        .inv-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; }
+        .inv-item {
+            background: var(--bg-card); border: 1px solid var(--item-color); border-radius: 8px;
+            padding: 10px; text-align: center; cursor: pointer; transition: transform 0.2s; position: relative;
+        }
+        .inv-item:hover { transform: scale(1.05); }
+        
+        .silhouette { filter: grayscale(100%) brightness(40%); opacity: 0.6; pointer-events: none; border-color: var(--border) !important;}
+        .secret-glow { animation: pulseSecret 2s infinite; box-shadow: 0 0 15px var(--rarity-secret); }
+        @keyframes pulseSecret {
+            0% { box-shadow: 0 0 5px var(--rarity-secret); }
+            50% { box-shadow: 0 0 20px var(--rarity-secret); }
+            100% { box-shadow: 0 0 5px var(--rarity-secret); }
+        }
+
+        /* Plantas / Cultivos */
+        .pot {
+            background-color: var(--soil);
+            border: 4px solid #3d2314;
+            border-radius: 12px;
+            height: 150px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.3s;
+            position: relative;
+            box-shadow: inset 0 10px 20px rgba(0,0,0,0.5);
+        }
+        .pot:hover { transform: scale(1.02); }
+        .pot.ready { background-color: var(--soil-ready); border-color: var(--pos); animation: pulseReady 2s infinite;}
+        .pot-icon { font-size: 50px; margin-bottom: 10px; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.5)); }
+        
+        @keyframes pulseReady {
+            0% { box-shadow: 0 0 5px var(--pos) inset; }
+            50% { box-shadow: 0 0 20px var(--pos) inset; }
+            100% { box-shadow: 0 0 5px var(--pos) inset; }
+        }
+
+        .tab-header { margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 10px; display: flex; justify-content: space-between; align-items: center;}
+
+        /* Easter Egg */
+        #secret-pixel {
+            position: fixed;
+            bottom: 0; right: 0;
+            width: 15px; height: 15px;
+            cursor: pointer;
+            z-index: 100000;
+            opacity: 0; 
+            transition: opacity 0.2s;
+        }
+        #secret-pixel:hover { opacity: 0.8; background-color: var(--rarity-secret); }
+
+        .quest-category {
+            background: var(--bg-surface); padding: 15px; border-radius: 12px; margin-bottom: 20px;
+        }
+        .quest-category h3 { margin-bottom: 15px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom:5px;}
+    </style>
+</head>
+<body>
+
+    <div class="topbar">
+        <div class="title" id="game-title" onclick="triggerTitleEasterEgg()" title="Haz clic varias veces...">💰 MONEY SIMULATOR ULTIMATE</div>
+        <div class="stats-container">
+            <div class="stat-box">
+                <div class="stat-label">Balance</div>
+                <div class="stat-value" id="ui-money">$0.00</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Ingresos /s</div>
+                <div class="stat-value green" id="ui-gps">$0.00/s</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Multiplicador</div>
+                <div class="stat-value" id="ui-mult">x1.00</div>
+            </div>
+            <div class="stat-box">
+                <div class="stat-label">Prestigio</div>
+                <div class="stat-value" id="ui-prestige">0</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="navbar" id="navbar">
+        <div class="nav-item active" data-tab="tab-jobs">💼 Trabajos</div>
+        <div class="nav-item" data-tab="tab-activities">⛏️ Actividades</div>
+        <div class="nav-item" data-tab="tab-plants">🌱 Invernadero</div>
+        <div class="nav-item" data-tab="tab-crypto">🖥️ Minería Cripto</div>
+        <div class="nav-item" data-tab="tab-biz">🏢 Negocios</div>
+        <div class="nav-item" data-tab="tab-stock">📈 Bolsa</div>
+        <div class="nav-item" data-tab="tab-invest">💹 Inversiones</div>
+        <div class="nav-item" data-tab="tab-bank">🏦 Banco</div>
+        <div class="nav-item" data-tab="tab-casino">🎰 Casino</div>
+        <div class="nav-item" data-tab="tab-cases">📦 Cajas Especiales</div>
+        <div class="nav-item" data-tab="tab-inv">🎒 Inventario</div>
+        <div class="nav-item" data-tab="tab-market">🛒 Mercado</div>
+        <div class="nav-item" data-tab="tab-collection">📚 Colección</div>
+        <div class="nav-item" data-tab="tab-prop">🏰 Propiedades</div>
+        <div class="nav-item" data-tab="tab-veh">🚗 Vehículos</div>
+        <div class="nav-item" data-tab="tab-achiev">🏆 Logros</div>
+        <div class="nav-item" data-tab="tab-stats">📊 Estadísticas</div>
+        <div class="nav-item" data-tab="tab-prestige">⭐ Prestigio</div>
+        <div class="nav-item" data-tab="tab-trade">🔄 Trading</div>
+        <div class="nav-item" data-tab="tab-settings">⚙️ Config</div>
+    </div>
+
+    <div class="content" id="main-content">
+        <!-- TRABAJOS -->
+        <div id="tab-jobs" class="tab-content active">
+            <div class="tab-header"><h2>Trabajos Disponibles</h2></div>
+            <div class="grid" id="grid-jobs"></div>
+        </div>
+
+        <!-- ACTIVIDADES -->
+        <div id="tab-activities" class="tab-content">
+            <div class="tab-header">
+                <h2>Actividades Extra</h2>
+                <p>Progresión independiente. Puedes realizar múltiples a la vez.</p>
+            </div>
+            <div class="grid" id="grid-activities"></div>
+        </div>
+
+        <!-- PLANTAS / INVERNADERO -->
+        <div id="tab-plants" class="tab-content">
+            <div class="tab-header">
+                <h2>Tu Invernadero</h2>
+                <p>Compra semillas, plántalas, espera y cosecha para obtener grandes beneficios.</p>
+            </div>
+            <div class="grid" id="grid-plants"></div>
+        </div>
+
+        <!-- MINERÍA CRIPTO -->
+        <div id="tab-crypto" class="tab-content">
+            <div class="tab-header">
+                <h2>Granja de Minería (SimCoin)</h2>
+                <p>Genera SimCoins pasivamente y véndelas en el momento adecuado.</p>
+            </div>
+            
+            <div class="card" style="text-align:center; max-width:600px; margin: 0 auto 20px auto;">
+                <div style="font-size:50px; margin-bottom:10px;">🪙</div>
+                <h3>Cartera de SimCoin</h3>
+                <div style="font-size:36px; font-weight:bold; color:var(--accent); margin:10px 0;" id="crypto-balance">0.0000 SC</div>
+                <div style="color:var(--text-sec); font-size:14px; margin-bottom:15px;">Poder de Minería: <span id="crypto-hash" style="color:var(--pos); font-weight:bold;">0 H/s</span></div>
+                
+                <div style="background:var(--bg-main); padding:15px; border-radius:8px; border:1px solid var(--border); margin-bottom:15px;">
+                    <div style="font-size:12px; color:var(--text-sec);">Precio Actual Mercado</div>
+                    <div id="crypto-price" style="font-size:24px; font-weight:bold; margin-top:5px;">$0.00</div>
+                    <div id="crypto-trend" style="font-size:12px; margin-top:5px;">--</div>
+                </div>
+
+                <button class="btn btn-success" style="font-size:18px; padding:15px;" onclick="sellCrypto()">Vender Todo</button>
+            </div>
+
+            <h3 style="margin-bottom:15px;">Hardware de Minería</h3>
+            <div class="grid" id="grid-gpus"></div>
+        </div>
+
+        <!-- NEGOCIOS -->
+        <div id="tab-biz" class="tab-content">
+            <div class="tab-header"><h2>Tus Negocios (Ingresos Pasivos)</h2></div>
+            <div class="grid" id="grid-biz"></div>
+        </div>
+
+        <!-- BOLSA -->
+        <div id="tab-stock" class="tab-content">
+            <div class="tab-header">
+                <h2>Mercado de Valores</h2>
+                <p>Alta volatilidad. Actualización cada 5s</p>
+            </div>
+            <div class="card" style="padding:0;">
+                <div id="list-stocks"></div>
+            </div>
+        </div>
+
+        <!-- INVERSIONES -->
+        <div id="tab-invest" class="tab-content">
+            <div class="tab-header">
+                <h2>Fondo de Inversiones</h2>
+                <p>Tendencias a largo plazo. Actualización cada 15s</p>
+            </div>
+            <div class="card" style="padding:0;">
+                <div id="list-invests"></div>
+            </div>
+        </div>
+
+        <!-- BANCO -->
+        <div id="tab-bank" class="tab-content">
+            <div class="tab-header"><h2>Banco Central</h2></div>
+            <div class="card" style="text-align:center; max-width:600px; margin: 0 auto;">
+                <div style="font-size:60px; margin-bottom:10px; cursor:pointer;" onclick="triggerBankEgg()" title="¿Es segura la caja fuerte?">🏦</div>
+                <h3>Fondos Depositados</h3>
+                <div style="font-size:36px; font-weight:bold; color:var(--pos); margin:15px 0;" id="bank-balance">$0.00</div>
+                <p style="color:var(--text-sec); margin-bottom:20px;">Genera 1% de interés pasivo cada 60 segundos, incluso desconectado.</p>
+                <input type="number" id="bank-input" class="casino-input" placeholder="Cantidad" style="width:100%; max-width:300px; margin-bottom:15px;">
+                <div class="casino-controls">
+                    <button class="btn btn-buy" onclick="depositBank()">Depositar</button>
+                    <button class="btn btn-action" onclick="withdrawBank()">Retirar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CASINO -->
+        <div id="tab-casino" class="tab-content">
+            <div class="tab-header"><h2>Casino Royal</h2></div>
+            
+            <div class="casino-area">
+                <h3>🎲 Dados (Multiplicador x2)</h3>
+                <p>Adivina si será mayor o menor a 50.</p>
+                <div class="casino-controls">
+                    <input type="number" id="dice-bet" class="casino-input" placeholder="Apuesta" min="1">
+                    <button class="btn btn-action" onclick="playDice('under')" style="width:auto;">Menor a 50</button>
+                    <button class="btn btn-action" onclick="playDice('over')" style="width:auto;">Mayor a 50</button>
+                </div>
+                <div id="dice-result" style="margin-top:10px; font-weight:bold; font-size:24px;"></div>
+            </div>
+
+            <div class="casino-area">
+                <h3>🎰 Ruleta Mágica</h3>
+                <p>Rojo/Negro (x2) | Verde (x14)</p>
+                <div class="casino-controls">
+                    <input type="number" id="roulette-bet" class="casino-input" placeholder="Apuesta" min="1">
+                    <button class="btn btn-danger" onclick="playRoulette('red')" style="width:auto;">Rojo</button>
+                    <button class="btn" style="background:#000; color:#fff; width:auto;" onclick="playRoulette('black')">Negro</button>
+                    <button class="btn" style="background:var(--pos); color:#fff; width:auto;" onclick="playRoulette('green')">Verde</button>
+                </div>
+                <div id="roulette-result" style="margin-top:10px; font-weight:bold; font-size:24px;"></div>
+            </div>
+
+            <div class="casino-area">
+                <h3>🃏 Blackjack (x2)</h3>
+                <div class="casino-controls" id="bj-start-controls">
+                    <input type="number" id="bj-bet" class="casino-input" placeholder="Apuesta" min="1">
+                    <button class="btn btn-action" onclick="startBlackjack()" style="width:auto;">Repartir</button>
+                </div>
+                <div id="bj-game-area" style="display:none; margin-top:20px;">
+                    <div>Crupier: <span id="bj-dealer-cards"></span> <span id="bj-dealer-score"></span></div>
+                    <div style="margin:10px 0;">Tú: <span id="bj-player-cards"></span> <span id="bj-player-score"></span></div>
+                    <div class="casino-controls">
+                        <button class="btn btn-action" onclick="bjHit()" style="width:auto;">Pedir</button>
+                        <button class="btn btn-danger" onclick="bjStand()" style="width:auto;">Plantarse</button>
+                    </div>
+                </div>
+                <div id="bj-result" style="margin-top:10px; font-weight:bold; font-size:20px;"></div>
+            </div>
+        </div>
+
+        <!-- CAJAS -->
+        <div id="tab-cases" class="tab-content">
+            <div class="tab-header"><h2>Apertura de Cajas Especiales</h2></div>
+            <div class="grid" id="grid-cases"></div>
+        </div>
+
+        <!-- INVENTARIO -->
+        <div id="tab-inv" class="tab-content">
+            <div class="tab-header">
+                <h2>Inventario</h2>
+                <button class="btn btn-action" onclick="sellAllInventory()" style="width:auto;">Vender Todo</button>
+            </div>
+            <div class="inv-grid" id="grid-inv"></div>
+        </div>
+
+        <!-- MERCADO -->
+        <div id="tab-market" class="tab-content">
+            <div class="tab-header" style="flex-direction: column; align-items: flex-start;">
+                <div style="display:flex; justify-content: space-between; width: 100%; align-items:center;">
+                    <h2>Mercado Negro (Objetos Aleatorios)</h2>
+                    <button class="btn" onclick="refreshMarket()" style="width:auto;">Actualizar (-$1,000)</button>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:15px; width:100%; flex-wrap:wrap;">
+                    <input type="text" id="market-search" class="casino-input" style="flex:1" placeholder="Buscar objeto..." oninput="updateMarketFilter()">
+                    <select id="market-rarity" class="casino-input" style="flex:1" onchange="updateMarketFilter()">
+                        <option value="">Todas las rarezas</option>
+                        <option value="common">Común</option>
+                        <option value="uncommon">Poco Común</option>
+                        <option value="rare">Rara</option>
+                        <option value="epic">Épica</option>
+                        <option value="legendary">Legendaria</option>
+                        <option value="mythic">Mítica</option>
+                        <option value="secret">Secreta</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid" id="grid-market"></div>
+        </div>
+
+        <!-- COLECCION -->
+        <div id="tab-collection" class="tab-content">
+            <div class="tab-header">
+                <h2>Colección de Objetos (<span id="coll-count">0</span> / <span id="coll-total">0</span>) - <span id="coll-pct">0%</span></h2>
+                <p style="color:var(--text-sec);">Encuentra objetos para registrarlos aquí.</p>
+            </div>
+            <div style="display:flex; flex-wrap:wrap; gap:10px; margin-bottom:16px; align-items:center;">
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                    <button class="btn btn-buy coll-filter-btn active" data-filter="all" onclick="setCollFilter('all',this)" style="padding:6px 14px; font-size:12px;">Todos</button>
+                    <button class="btn btn-buy coll-filter-btn" data-filter="unlocked" onclick="setCollFilter('unlocked',this)" style="padding:6px 14px; font-size:12px;">✅ Obtenidos</button>
+                    <button class="btn btn-buy coll-filter-btn" data-filter="locked" onclick="setCollFilter('locked',this)" style="padding:6px 14px; font-size:12px;">🔒 Pendientes</button>
+                </div>
+                <select id="coll-rarity-filter" onchange="renderCollection()" class="casino-input" style="padding:6px 12px; font-size:12px; width:auto;">
+                    <option value="all">🎨 Todas las rarezas</option>
+                    <option value="common">⬜ Común</option>
+                    <option value="uncommon">🟩 Poco común</option>
+                    <option value="rare">🟦 Rara</option>
+                    <option value="epic">🟪 Épica</option>
+                    <option value="legendary">🟨 Legendaria</option>
+                    <option value="mythic">🟧 Mítica</option>
+                    <option value="secret">🟥 Secreta</option>
+                </select>
+                <select id="coll-sort" onchange="renderCollection()" class="casino-input" style="padding:6px 12px; font-size:12px; width:auto;">
+                    <option value="default">📋 Orden por defecto</option>
+                    <option value="rarity-asc">⬆️ Rareza (menor → mayor)</option>
+                    <option value="rarity-desc">⬇️ Rareza (mayor → menor)</option>
+                    <option value="name">🔤 Nombre A-Z</option>
+                </select>
+            </div>
+            <div class="inv-grid" id="grid-collection"></div>
+        </div>
+
+        <!-- PROPIEDADES -->
+        <div id="tab-prop" class="tab-content">
+            <div class="tab-header"><h2>Bienes Raíces (Ingreso Pasivo Fuerte)</h2></div>
+            <div class="grid" id="grid-prop"></div>
+        </div>
+
+        <!-- VEHICULOS -->
+        <div id="tab-veh" class="tab-content">
+            <div class="tab-header"><h2>Vehículos (Multiplicadores Globales)</h2></div>
+            <div class="grid" id="grid-veh"></div>
+        </div>
+
+        <!-- MISIONES (desactivadas) -->
+        <div id="tab-quests" style="display:none;">
+            <div class="tab-header"><h2>Misiones (Diarias, Semanales, Mensuales)</h2></div>
+            <div id="quests-container"></div>
+        </div>
+
+        <!-- LOGROS -->
+        <div id="tab-achiev" class="tab-content">
+            <div class="tab-header"><h2>Logros (<span id="achiev-count">0</span>)</h2></div>
+            <div class="grid" id="grid-achiev"></div>
+        </div>
+
+        <!-- ESTADISTICAS -->
+        <div id="tab-stats" class="tab-content">
+            <div class="tab-header"><h2>Estadísticas Avanzadas</h2></div>
+            <div class="grid">
+                <div class="stat-box"><span>Tiempo Jugado:</span> <br><strong id="stat-time" style="font-size:20px; color:var(--accent);">0s</strong></div>
+                <div class="stat-box"><span>Dinero Total Ganado:</span> <br><strong id="stat-earned" style="font-size:20px; color:var(--pos);">0</strong></div>
+                <div class="stat-box"><span>Dinero Total Gastado:</span> <br><strong id="stat-spent" style="font-size:20px; color:var(--neg);">0</strong></div>
+                <div class="stat-box"><span>Objeto Más Valioso:</span> <br><strong id="stat-best-box" style="font-size:20px; color:var(--rarity-legendary);">0</strong></div>
+                <div class="stat-box"><span>GPS Máximo:</span> <br><strong id="stat-max-gps" style="font-size:20px;">0</strong></div>
+                <div class="stat-box"><span>Prestigios Realizados:</span> <br><strong id="stat-prestiges" style="font-size:20px;">0</strong></div>
+                <div class="stat-box"><span>Inversiones Realizadas:</span> <br><strong id="stat-invests" style="font-size:20px;">0</strong></div>
+                <div class="stat-box"><span>Total Ganado Casino:</span> <br><strong id="stat-casino" style="font-size:20px; color:var(--pos);">0</strong></div>
+                <div class="stat-box"><span>Ganancias Offline:</span> <br><strong id="stat-offline" style="font-size:20px; color:var(--pos);">0</strong></div>
+                <div class="stat-box"><span>Plantas Cosechadas:</span> <br><strong id="stat-plants" style="font-size:20px;">0</strong></div>
+                <div class="stat-box"><span>SimCoins Minadas:</span> <br><strong id="stat-simcoins" style="font-size:20px; color:var(--accent);">0</strong></div>
+            </div>
+        </div>
+
+        <!-- PRESTIGIO -->
+        <div id="tab-prestige" class="tab-content">
+            <div class="tab-header"><h2>Prestigio Avanzado</h2></div>
+            <div class="card" style="text-align:center;">
+                <div style="font-size:60px; margin-bottom:10px;">⭐</div>
+                <h3>Ascender a una nueva vida</h3>
+                <p style="margin:15px 0;">Reiniciarás tu dinero, trabajos, negocios, plantas, cripto, bolsa y propiedades. Mantendrás estadísticas, logros, vehículos, colección y objetos secretos. El banco será vaciado pero ganarás intereses más fuertes si vuelves a depositar.</p>
+                <p>Nuevos niveles de Prestigio desbloquean negocios, propiedades y cajas ultra raras.</p>
+                <p style="margin-top:15px;">Multiplicador Actual por Prestigio: <strong id="prest-current" style="color:var(--accent);">x1.00</strong></p>
+                <p>Ganarás: <strong id="prest-gain" style="color:var(--pos);">+0.00</strong> a tu multiplicador permanente basado en el dinero total ganado.</p>
+                <button class="btn btn-action" style="margin-top:20px; font-size:18px;" onclick="doPrestige()">Hacer Prestigio</button>
+            </div>
+        </div>
+
+        <!-- TRADING -->
+        <div id="tab-trade" class="tab-content">
+            <div class="tab-header"><h2>🔄 Trading entre Jugadores</h2></div>
+            <div id="trade-local-banner" style="display:none; background:#3a2000; border:1px solid #f90; border-radius:8px; padding:12px 16px; margin-bottom:16px; font-size:13px; color:#f90;">
+                ⚠️ <strong>Modo local (archivo)</strong> — El trading entre diferentes jugadores solo funciona cuando el juego está publicado en <strong>GitHub Pages</strong>. En local, el inventario se guarda en este navegador y solo puedes probarlo contigo mismo en la misma pestaña.
+            </div>
+            <div class="grid" style="max-width:900px;">
+                <div class="card">
+                    <h3>Tu Código de Jugador</h3>
+                    <p style="color:var(--text-sec); font-size:12px; margin-bottom:10px;">Comparte este código para que otros puedan enviarte trades o dinero.</p>
+                    <div id="my-trade-code" style="font-size:26px; font-weight:bold; color:var(--accent); background:var(--bg-main); padding:15px; border-radius:8px; text-align:center; letter-spacing:6px; margin:10px 0;">---</div>
+                    <button class="btn btn-buy" onclick="copyTradeCode()">📋 Copiar Código</button>
+                </div>
+                <div class="card">
+                    <h3>💸 Enviar Dinero</h3>
+                    <p style="color:var(--text-sec); font-size:12px; margin-bottom:10px;">El dinero llega al instante a la bandeja del otro jugador.</p>
+                    <input type="text" id="trade-target-code" class="casino-input" placeholder="Código del jugador destinatario" style="width:100%; margin-bottom:10px;" maxlength="6">
+                    <input type="number" id="trade-money-amount" class="casino-input" placeholder="Cantidad de dinero" style="width:100%; margin-bottom:10px;">
+                    <button class="btn btn-action" onclick="sendMoney()">Enviar Dinero</button>
+                    <div id="send-money-result" style="margin-top:10px; font-size:13px;"></div>
+                </div>
+                <div class="card" style="grid-column: 1 / -1;">
+                    <h3>🔍 Ver Inventario de otro Jugador y Proponer Trade</h3>
+                    <p style="color:var(--text-sec); font-size:12px; margin-bottom:10px;">Introduce el código del jugador para ver su inventario y proponerle un intercambio de objetos.</p>
+                    <div style="display:flex; gap:10px; margin-bottom:10px;">
+                        <input type="text" id="trade-browse-code" class="casino-input" placeholder="Código del jugador" style="flex:1;" maxlength="6">
+                        <button class="btn btn-action" onclick="browsePlayerInventory()">🔎 Ver inventario</button>
+                    </div>
+                    <div id="trade-browse-result" style="font-size:13px; margin-bottom:10px;"></div>
+                    <div id="trade-browse-inv" style="display:none;">
+                        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
+                            <div style="flex:1; min-width:200px;">
+                                <p style="font-size:12px; color:var(--text-sec); margin-bottom:6px;">Su objeto (que tú quieres):</p>
+                                <select id="trade-their-item" class="casino-input" style="width:100%;"></select>
+                            </div>
+                            <div style="flex:1; min-width:200px;">
+                                <p style="font-size:12px; color:var(--text-sec); margin-bottom:6px;">Tu objeto (que ofreces):</p>
+                                <select id="trade-my-offer" class="casino-input" style="width:100%;"></select>
+                            </div>
+                        </div>
+                        <button class="btn btn-buy" onclick="proposeTrade()">🤝 Proponer Intercambio</button>
+                        <div id="trade-item-result" style="margin-top:10px; font-size:13px;"></div>
+                    </div>
+                </div>
+                <div class="card" style="grid-column: 1 / -1;">
+                    <h3>📬 Peticiones Recibidas</h3>
+                    <p style="color:var(--text-sec); font-size:12px; margin-bottom:10px;">Dinero y propuestas de intercambio enviadas a tu código.</p>
+                    <button class="btn btn-buy" style="margin-bottom:15px;" onclick="checkIncomingTrades()">🔄 Actualizar bandeja</button>
+                    <div id="incoming-trades-list"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONFIG -->
+        <div id="tab-settings" class="tab-content">
+            <div class="tab-header"><h2>Configuración</h2></div>
+            <div class="grid">
+                <div class="card">
+                    <h3>Guardado</h3>
+                    <button class="btn btn-buy" onclick="saveGame(true)">Guardar Manualmente</button>
+                    <button class="btn btn-buy" onclick="exportSave()">Exportar Partida</button>
+                    <button class="btn btn-buy" onclick="importSave()">Importar Partida</button>
+                    <button class="btn btn-danger" onclick="hardReset()">Borrar Todo</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Seed Store Modal -->
+    <div id="modal-seeds" class="modal">
+        <div class="modal-content" style="max-width: 700px;">
+            <h2 style="color:var(--pos); margin-bottom: 15px;">🌱 Tienda de Semillas</h2>
+            <div id="seed-list" class="grid" style="grid-template-columns: 1fr 1fr;"></div>
+            <button class="btn btn-action" style="margin-top:20px;" onclick="closeSeedModal()">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- Case Modal -->
+    <div id="modal-case" class="modal">
+        <div class="modal-content" style="max-width: 800px;">
+            <h2 id="mc-title">Abriendo Caja...</h2>
+            <div class="case-spinner">
+                <div class="case-track" id="mc-track"></div>
+                <div class="case-line"></div>
+            </div>
+            <div id="mc-winner" style="font-size: 24px; font-weight: bold; margin: 20px 0; min-height:30px;"></div>
+            <button id="mc-close" class="btn btn-action" style="display:none;" onclick="closeCaseModal()">Recoger</button>
+        </div>
+    </div>
+
+    <!-- Generic Modal for Offline/Export/Events -->
+    <div id="modal-gen" class="modal">
+        <div class="modal-content">
+            <h2 id="mg-title" style="margin-bottom:15px; color:var(--accent);">Título</h2>
+            <p id="mg-body" style="margin: 20px 0; word-wrap: break-word; font-size:16px; white-space:pre-wrap;"></p>
+            <textarea id="mg-input" class="casino-input" style="width:100%; height:100px; display:none; margin-bottom:15px;"></textarea>
+            <button class="btn btn-action" id="mg-btn" onclick="closeGenModal()">Aceptar</button>
+        </div>
+    </div>
+
+    <div class="notif-container" id="notif-box"></div>
+
+    <!-- EASTER EGG PIXEL -->
+    <div id="secret-pixel" onclick="triggerPixelEasterEgg()" title="¿Qué haces por aquí abajo?"></div>
+
+    <script>
+        // --- DATA DE JUEGO BASE Y EXPANSIÓN ---
+        const DB = {
+            jobs: [
+                { id: 'j1', name: 'Mendigo', icon: '🤲', baseSalary: 1, baseDuration: 2000, reqLevel: 0 },
+                { id: 'j2', name: 'Repartidor', icon: '🚲', baseSalary: 5, baseDuration: 2500, reqLevel: 10 },
+                { id: 'j3', name: 'Cajero', icon: '🛒', baseSalary: 15, baseDuration: 3000, reqLevel: 20 },
+                { id: 'j4', name: 'Oficinista', icon: '💼', baseSalary: 50, baseDuration: 4000, reqLevel: 30 },
+                { id: 'j5', name: 'Gerente', icon: '👔', baseSalary: 150, baseDuration: 5000, reqLevel: 40 },
+                { id: 'j6', name: 'Programador', icon: '💻', baseSalary: 400, baseDuration: 6000, reqLevel: 50 },
+                { id: 'j7', name: 'Director IT', icon: '🖥️', baseSalary: 1200, baseDuration: 7500, reqLevel: 60 },
+                { id: 'j8', name: 'CEO', icon: '🏢', baseSalary: 5000, baseDuration: 9000, reqLevel: 70 },
+                { id: 'j9', name: 'Magnate', icon: '🎩', baseSalary: 25000, baseDuration: 12000, reqLevel: 80 },
+                { id: 'j10', name: 'Emperador Global', icon: '👑', baseSalary: 100000, baseDuration: 15000, reqLevel: 90 },
+                { id: 'j11', name: 'Dueño del Mundo', icon: '🌎', baseSalary: 500000, baseDuration: 18000, reqLevel: 100 },
+                { id: 'j12', name: 'Dios Financiero', icon: '👁️', baseSalary: 2500000, baseDuration: 20000, reqLevel: 120 }
+            ],
+            activities: [
+                { id: 'act1', name: 'Agricultura', icon: '🌾', baseCost: 100, baseReward: 15, baseDuration: 5000 },
+                { id: 'act2', name: 'Excavación', icon: '⛏️', baseCost: 500, baseReward: 80, baseDuration: 8000 },
+                { id: 'act3', name: 'Caza del Tesoro', icon: '🗺️', baseCost: 2000, baseReward: 400, baseDuration: 15000 },
+                { id: 'act4', name: 'Reciclaje', icon: '♻️', baseCost: 5000, baseReward: 1200, baseDuration: 20000 },
+                { id: 'act5', name: 'Chatarra', icon: '⚙️', baseCost: 15000, baseReward: 4500, baseDuration: 30000 },
+                { id: 'act6', name: 'Reventa', icon: '🤝', baseCost: 50000, baseReward: 18000, baseDuration: 45000 }
+            ],
+            seeds: [
+                { id: 'sd1', name: 'Trigo', icon: '🌾', cost: 100, growTime: 60, yield: 1, sellPrice: 250 }, 
+                { id: 'sd2', name: 'Tomate', icon: '🍅', cost: 500, growTime: 300, yield: 1, sellPrice: 1500 }, 
+                { id: 'sd3', name: 'Girasol', icon: '🌻', cost: 2500, growTime: 1200, yield: 1, sellPrice: 10000 }, 
+                { id: 'sd4', name: 'Fresa', icon: '🍓', cost: 5000, growTime: 1800, yield: 3, sellPrice: 8000 },
+                { id: 'sd5', name: 'Berenjena', icon: '🍆', cost: 10000, growTime: 3600, yield: 1, sellPrice: 60000 }, 
+                { id: 'sd6', name: 'Calabaza', icon: '🎃', cost: 25000, growTime: 7200, yield: 1, sellPrice: 200000 },
+                { id: 'sd7', name: 'Planta Carnívora', icon: '🥀', cost: 80000, growTime: 10800, yield: 2, sellPrice: 350000 },
+                { id: 'sd8', name: 'Árbol de Dinero', icon: '🌳', cost: 150000, growTime: 14400, yield: 1, sellPrice: 1200000 }, 
+                { id: 'sd9', name: 'Enredadera Mágica', icon: '🧬', cost: 500000, growTime: 28800, yield: 1, sellPrice: 5000000 },
+                { id: 'sd10', name: 'Flor Galáctica', icon: '🌌', cost: 2e6, growTime: 43200, yield: 1, sellPrice: 25000000 }, 
+                { id: 'sd11', name: 'Árbol del Multiverso', icon: '🌌', cost: 1e8, growTime: 86400, yield: 1, sellPrice: 2e9 }
+            ],
+            gpus: [
+                { id: 'gpu0', name: 'CPU Antiguo', icon: '💽', cost: 500, hash: 0.1 },
+                { id: 'gpu1', name: 'USB Miner', icon: '🔋', cost: 1500, hash: 0.3 },
+                { id: 'gpu2', name: 'GTX 1060', icon: '📼', cost: 5000, hash: 1 }, 
+                { id: 'gpu3', name: 'RTX 3080', icon: '📟', cost: 50000, hash: 15 },
+                { id: 'gpu4', name: 'RTX 4090', icon: '🖥️', cost: 250000, hash: 80 },
+                { id: 'gpu5', name: 'ASIC V1', icon: '📻', cost: 800000, hash: 250 },
+                { id: 'gpu6', name: 'Antminer S19', icon: '🖲️', cost: 2.5e6, hash: 900 },
+                { id: 'gpu7', name: 'Granja de GPUs', icon: '🏭', cost: 1e7, hash: 4000 },
+                { id: 'gpu8', name: 'Quantum Rig', icon: '🧊', cost: 5e7, hash: 25000 },
+                { id: 'gpu9', name: 'Esfera Dyson', icon: '☀️', cost: 1e9, hash: 600000 },
+                { id: 'gpu10', name: 'Cerebro Matrioshka', icon: '🧠', cost: 5e10, hash: 40000000 }
+            ],
+            biz: [
+                { id: 'b1', name: 'Puesto de Limonada', icon: '🍋', baseCost: 50, baseInc: 1, reqPrestige: 0 },
+                { id: 'b2', name: 'Cafetería', icon: '☕', baseCost: 500, baseInc: 8, reqPrestige: 0 },
+                { id: 'b3', name: 'Pizzería', icon: '🍕', baseCost: 2000, baseInc: 25, reqPrestige: 0 },
+                { id: 'b4', name: 'Tienda Electrónica', icon: '📱', baseCost: 8000, baseInc: 80, reqPrestige: 0 },
+                { id: 'b5', name: 'Gimnasio', icon: '🏋️', baseCost: 25000, baseInc: 200, reqPrestige: 0 },
+                { id: 'b6', name: 'Concesionario', icon: '🚘', baseCost: 75000, baseInc: 500, reqPrestige: 0 },
+                { id: 'b7', name: 'Hotel de Lujo', icon: '🏨', baseCost: 500000, baseInc: 2500, reqPrestige: 0 },
+                { id: 'b8', name: 'Casino', icon: '🎰', baseCost: 2000000, baseInc: 8000, reqPrestige: 0 },
+                { id: 'b9', name: 'Mina de Diamantes', icon: '💎', baseCost: 10000000, baseInc: 35000, reqPrestige: 0 },
+                { id: 'b10', name: 'Empresa Espacial', icon: '🚀', baseCost: 100000000, baseInc: 250000, reqPrestige: 0 },
+                { id: 'b11', name: 'Banco Privado', icon: '🏦', baseCost: 5e8, baseInc: 1200000, reqPrestige: 1 },
+                { id: 'b12', name: 'Imperio Tecnológico', icon: '🛰️', baseCost: 2.5e9, baseInc: 6000000, reqPrestige: 2 },
+                { id: 'b13', name: 'Planeta Privado', icon: '🪐', baseCost: 2e10, baseInc: 45000000, reqPrestige: 3 },
+                { id: 'b14', name: 'Sistema Solar Mío', icon: '🌞', baseCost: 5e11, baseInc: 1e9, reqPrestige: 5 },
+                { id: 'b15', name: 'Corporación de IA', icon: '🤖', baseCost: 1e13, baseInc: 2e10, reqPrestige: 10 },
+                { id: 'b16', name: 'Viajes Temporales', icon: '⏳', baseCost: 5e14, baseInc: 1e12, reqPrestige: 15 },
+                { id: 'b17', name: 'Control del Multiverso', icon: '🌌', baseCost: 1e16, baseInc: 5e13, reqPrestige: 20 }
+            ],
+            stocks: [
+                { id: 's1', name: 'MacroSoft', icon: '💻', basePrice: 100, vol: 0.05 },
+                { id: 's2', name: 'Pear Inc', icon: '🍎', basePrice: 250, vol: 0.08 },
+                { id: 's3', name: 'Bank of Global', icon: '🏛️', basePrice: 500, vol: 0.03 },
+                { id: 's4', name: 'SpaceY', icon: '🚀', basePrice: 1500, vol: 0.15 },
+                { id: 's5', name: 'DogeCoin', icon: '🐕', basePrice: 10, vol: 0.25 },
+                { id: 's6', name: 'SimFlix', icon: '🎬', basePrice: 800, vol: 0.10 },
+                { id: 's7', name: 'GoogalPlex', icon: '🔍', basePrice: 2000, vol: 0.07 },
+                { id: 's8', name: 'MetaWorld', icon: '🌐', basePrice: 600, vol: 0.12 },
+                { id: 's9', name: 'AmaZoom', icon: '📦', basePrice: 3000, vol: 0.06 },
+                { id: 's10', name: 'TeslaCoin', icon: '⚡', basePrice: 1200, vol: 0.20 },
+                { id: 's11', name: 'OilCorp', icon: '🛢️', basePrice: 400, vol: 0.09 },
+                { id: 's12', name: 'FarmTech', icon: '🌾', basePrice: 150, vol: 0.04 },
+                { id: 's13', name: 'QuantumAI', icon: '🤖', basePrice: 5000, vol: 0.18 },
+                { id: 's14', name: 'CryptoBank', icon: '🏦', basePrice: 900, vol: 0.22 },
+                { id: 's15', name: 'GalaxyCorp', icon: '🌌', basePrice: 8000, vol: 0.30 }
+            ],
+            investments: [
+                { id: 'inv1', name: 'Oro', icon: '🪙', basePrice: 1500, vol: 0.01 },
+                { id: 'inv2', name: 'Plata', icon: '🥈', basePrice: 500, vol: 0.02 },
+                { id: 'inv3', name: 'Platino', icon: '🪨', basePrice: 3000, vol: 0.015 },
+                { id: 'inv4', name: 'Diamantes', icon: '💎', basePrice: 10000, vol: 0.03 },
+                { id: 'inv5', name: 'Arte', icon: '🖼️', basePrice: 50000, vol: 0.05 },
+                { id: 'inv6', name: 'Startups', icon: '💡', basePrice: 100000, vol: 0.1 },
+                { id: 'inv7', name: 'Franquicias', icon: '🏪', basePrice: 250000, vol: 0.04 },
+                { id: 'inv8', name: 'Bonos del Estado', icon: '📜', basePrice: 10000, vol: 0.005 },
+                { id: 'inv9', name: 'Fondo Indexado', icon: '📈', basePrice: 500000, vol: 0.02 },
+                { id: 'inv10', name: 'Sector Energético', icon: '⚡', basePrice: 75000, vol: 0.035 },
+                { id: 'inv11', name: 'Bienes Raíces', icon: '🏠', basePrice: 200000, vol: 0.025 },
+                { id: 'inv12', name: 'Materias Primas', icon: '🌿', basePrice: 30000, vol: 0.04 },
+                { id: 'inv13', name: 'Cripto Institucional', icon: '🔐', basePrice: 1000000, vol: 0.12 },
+                { id: 'inv14', name: 'IA Ventures', icon: '🧠', basePrice: 750000, vol: 0.08 },
+                { id: 'inv15', name: 'Metaverso', icon: '🌐', basePrice: 400000, vol: 0.15 }
+            ],
+            properties: [
+                { id: 'p1', name: 'Casa Pequeña', icon: '🏠', cost: 100000, inc: 100, reqPrestige: 0 },
+                { id: 'p2', name: 'Chalet', icon: '🏡', cost: 500000, inc: 600, reqPrestige: 0 },
+                { id: 'p3', name: 'Mansión', icon: '🏰', cost: 2500000, inc: 3500, reqPrestige: 0 },
+                { id: 'p4', name: 'Rascacielos', icon: '🏙️', cost: 15000000, inc: 25000, reqPrestige: 0 },
+                { id: 'p5', name: 'Isla Privada', icon: '🏝️', cost: 100000000, inc: 200000, reqPrestige: 0 },
+                { id: 'p6', name: 'Castillo Antiguo', icon: '🏯', cost: 800000000, inc: 1800000, reqPrestige: 1 },
+                { id: 'p7', name: 'Estación Espacial', icon: '🛸', cost: 5e9, inc: 10000000, reqPrestige: 2 },
+                { id: 'p8', name: 'Ciudad Submarina', icon: '🌊', cost: 2.5e10, inc: 55000000, reqPrestige: 4 },
+                { id: 'p9', name: 'Galaxia de Bolsillo', icon: '💫', cost: 1e13, inc: 2.5e10, reqPrestige: 10 },
+                { id: 'p10', name: 'Dimensión Privada', icon: '🌀', cost: 5e15, inc: 1.5e13, reqPrestige: 20 }
+            ],
+            vehicles: [
+                { id: 'v1', name: 'Bicicleta', icon: '🚲', cost: 5000, mult: 0.05 },
+                { id: 'v2', name: 'Moto', icon: '🏍️', cost: 25000, mult: 0.10 },
+                { id: 'v3', name: 'Coche Deportivo', icon: '🏎️', cost: 150000, mult: 0.25 },
+                { id: 'v4', name: 'Hypercar', icon: '🏎️', cost: 1000000, mult: 0.50 },
+                { id: 'v5', name: 'Helicóptero', icon: '🚁', cost: 5000000, mult: 1.00 },
+                { id: 'v6', name: 'Yate de Lujo', icon: '🛥️', cost: 15000000, mult: 1.50 },
+                { id: 'v7', name: 'Jet Privado', icon: '✈️', cost: 40000000, mult: 2.50 },
+                { id: 'v8', name: 'Submarino Nuclear', icon: '🛳️', cost: 200000000, mult: 5.00 },
+                { id: 'v9', name: 'Nave Espacial FTL', icon: '🚀', cost: 1e9, mult: 15.00 },
+                { id: 'v10', name: 'Teletransportador', icon: '🌀', cost: 5e10, mult: 50.00 }
+            ],
+            rarities: [
+                { id: 'common', name: 'Común', color: 'var(--rarity-common)', chance: 0.49, valMult: 1 },
+                { id: 'uncommon', name: 'Poco Común', color: 'var(--rarity-uncommon)', chance: 0.25, valMult: 3 },
+                { id: 'rare', name: 'Rara', color: 'var(--rarity-rare)', chance: 0.15, valMult: 10 },
+                { id: 'epic', name: 'Épica', color: 'var(--rarity-epic)', chance: 0.07, valMult: 40 },
+                { id: 'legendary', name: 'Legendaria', color: 'var(--rarity-legendary)', chance: 0.03, valMult: 150 },
+                { id: 'mythic', name: 'Mítica', color: 'var(--rarity-mythic)', chance: 0.009999, valMult: 1000 },
+                { id: 'secret', name: 'Secreta', color: 'var(--rarity-secret)', chance: 0.000001, valMult: 50000 }
+            ],
+            items: [], 
+            secretItems: [
+                { id: 'sec1', name: 'El Santo Grial', icon: '🍷', baseVal: 50000000, mult: 5 },
+                { id: 'sec2', name: 'Corona del Rey Caído', icon: '👑', baseVal: 25000000, mult: 3 },
+                { id: 'sec3', name: 'Reloj del Tiempo', icon: '⏳', baseVal: 100000000, mult: 10 },
+                { id: 'sec4', name: 'Cubo Tesseract', icon: '🧊', baseVal: 500000000, mult: 25 }
+            ],
+            cases: [
+                { id: 'c1', name: 'Caja Básica', icon: '📦', cost: 500, mult: 1, reqPrestige: 0 },
+                { id: 'c2', name: 'Caja de Plata', icon: '🥈', cost: 2500, mult: 5, reqPrestige: 0 },
+                { id: 'c3', name: 'Caja de Oro', icon: '🥇', cost: 10000, mult: 20, reqPrestige: 0 },
+                { id: 'c4', name: 'Caja Diamante', icon: '💎', cost: 50000, mult: 100, reqPrestige: 0 },
+                { id: 'c5', name: 'Caja Cósmica', icon: '🌌', cost: 500000, mult: 1000, reqPrestige: 0 },
+            ],
+            achievements: [],
+            secretAchievements: [
+                { id: 'sa1', name: 'Suerte Divina', desc: 'Encuentra un objeto secreto en una caja.' },
+                { id: 'sa2', name: 'Sobreviviente', desc: 'Sobrevive a un Colapso Global en el mercado.' },
+                { id: 'sa3', name: 'Multimillonario de Lotería', desc: 'Gana la Lotería Mundial ultra rara.' },
+                { id: 'sa4', name: 'Curiosidad Mató al Gato', desc: 'Presiona el título del juego 10 veces.' },
+                { id: 'sa5', name: 'Rincón Oscuro', desc: 'Encontraste el píxel escondido en el infinito.' },
+                { id: 'sa6', name: 'Jugador Retro', desc: 'Introdujiste el Código Konami.' },
+                { id: 'sa7', name: 'Asaltante de Bancos', desc: 'Intentaste romper la caja fuerte del Banco a base de golpes.' }
+            ]
+        };
+
+        // Procedural Generation
+        function generateItems() {
+            const prefixes = ["Viejo", "Brillante", "Maldito", "Sagrado", "Imperial", "Místico", "Roto", "Perfecto", "Celestial", "Oscuro", "Antiguo", "Encantado", "Mágico", "Épico", "Divino", "Corrupto", "Puro", "Eterno", "Sombrío", "Legendario"];
+            const nouns = ["Reloj", "Anillo", "Collar", "Estatua", "Moneda", "Gema", "Corona", "Cáliz", "Espada", "Libro", "Escudo", "Varita", "Poción", "Mapa", "Cristal", "Amuleto", "Trofeo", "Pergamino", "Hacha", "Arco"];
+            const icons = ['⌚','💍','📿','🗽','🪙','💎','👑','🍷','🗡️','📖','🛡️','🪄','🧪','🗺️','🔮','📿','🏆','📜','🪓','🏹'];
+            let id = 1;
+            for(let i=0; i<prefixes.length; i++) {
+                for(let j=0; j<nouns.length; j++) {
+                    DB.items.push({
+                        id: 'i'+id,
+                        name: prefixes[i] + ' ' + nouns[j],
+                        icon: icons[j],
+                        baseVal: Math.floor(Math.random() * 100) + 10
+                    });
+                    id++;
+                }
+            }
+        }
+        
+        function generateCases() {
+            for(let i=6; i<=10; i++) {
+                DB.cases.push({
+                    id: 'c'+i, name: 'Caja Nivel '+i, icon: '🎁', cost: Math.pow(4, i-1) * 500, mult: Math.pow(3, i-1), reqPrestige: 0
+                });
+            }
+            // Ultra Cases
+            const ultra = [
+                { id: 'uc1', name: 'Caja Legendaria', icon: '🧰', cost: 1e6, mult: 5000, reqPrestige: 1 },
+                { id: 'uc2', name: 'Caja Mítica', icon: '🔮', cost: 1e7, mult: 25000, reqPrestige: 2 },
+                { id: 'uc3', name: 'Caja Divina', icon: '✨', cost: 1e8, mult: 150000, reqPrestige: 3 },
+                { id: 'uc4', name: 'Caja Celestial', icon: '☄️', cost: 1e9, mult: 1e6, reqPrestige: 4 },
+                { id: 'uc5', name: 'Caja Galáctica', icon: '🌌', cost: 1e10, mult: 1e7, reqPrestige: 5 },
+                { id: 'uc6', name: 'Caja Omega', icon: '🧿', cost: 1e11, mult: 1e8, reqPrestige: 10 },
+                { id: 'uc7', name: 'Caja Cuántica', icon: '⚛️', cost: 1e12, mult: 1e9, reqPrestige: 15 },
+                { id: 'uc8', name: 'Caja del Vacío', icon: '🕳️', cost: 1e13, mult: 1e10, reqPrestige: 20 },
+                { id: 'uc9', name: 'Caja del Infinito', icon: '♾️', cost: 1e15, mult: 5e11, reqPrestige: 25 }
+            ];
+            DB.cases.push(...ultra);
+        }
+
+        function generateAchievements() {
+            const types = [
+                { type: 'money', thresholds: [1e3, 1e6, 1e9, 1e12, 1e15, 1e18], desc: 'Consigue $', title: 'Riqueza' },
+                { type: 'click', thresholds: [100, 1000, 5000, 10000, 50000, 100000], desc: 'Haz click ', title: 'Trabajador' },
+                { type: 'biz', thresholds: [10, 50, 100, 250, 500, 1000], desc: 'Nivel total negocios ', title: 'Magnate' },
+                { type: 'casino', thresholds: [10, 50, 100, 500, 1000, 5000], desc: 'Juegos de casino jugados ', title: 'Apostador' },
+                { type: 'cases', thresholds: [10, 50, 100, 500, 1000, 5000], desc: 'Cajas abiertas ', title: 'Suertudo' },
+                { type: 'plants', thresholds: [10, 50, 100, 250, 500, 1000], desc: 'Plantas cosechadas ', title: 'Agricultor Experto' },
+                { type: 'crypto', thresholds: [10, 100, 1000, 10000, 100000, 1000000], desc: 'SimCoins minadas ', title: 'Cripto Entusiasta' }
+            ];
+            let id = 1;
+            types.forEach(t => {
+                t.thresholds.forEach((th, idx) => {
+                    DB.achievements.push({
+                        id: 'a'+id, type: t.type, req: th, name: `${t.title} ${idx+1}`, desc: `${t.desc}${t.type==='money'?formatMoney(th).replace('$',''):th}`
+                    });
+                    id++;
+                });
+            });
+            while(DB.achievements.length < 100) {
+                DB.achievements.push({ id: 'a'+id, type: 'prestige', req: id-42, name: `Prestigio ${id-42}`, desc: `Alcanza nivel de prestigio ${id-42}`});
+                id++;
+            }
+        }
+
+        generateItems();
+        generateCases();
+        generateAchievements();
+
+        // --- GAME STATE ---
+        let game = {
+            money: 0, totalEarned: 0, lastSave: Date.now(), startTime: Date.now(),
+            prestige: 0, prestigeMult: 0,
+            job: { id: 'j1', level: 0, xp: 0, isWorking: false, workStart: 0 },
+            biz: {}, stocks: {}, stockPrices: {}, props: {}, vehs: {},
+            inv: [], market: [], stats: { clicks: 0, casinoPlayed: 0, casesOpened: 0 },
+            achievs: {}, quests: { daily:[], weekly:[], monthly:[], reset: {} }
+        };
+
+        let uidCounter = 0;
+        let lastTick = performance.now();
+        let loopId;
+        let marketFilter = { search: '', rarity: '' };
+        let timers = { bank: 0, events: 0, ui: 0, cryptoMarket: 0 };
+        let selectedPotIndex = -1;
+        let easterEggClicks = 0;
+        let bankClicks = 0;
+        let pendingCaseWinner = null;
+
+        // Easter Egg: Konami Code
+        let kCode = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
+        let kPos = 0;
+        window.addEventListener('keydown', (e) => {
+            if(e.key === kCode[kPos] || e.key.toLowerCase() === kCode[kPos].toLowerCase()) {
+                kPos++;
+                if(kPos === kCode.length) {
+                    kPos = 0;
+                    if(!game.secretAchievs['sa6']) {
+                        checkSecretAchievements('sa6');
+                        addMoney(100000000 * (1+game.prestige));
+                        showGenModal('🎮 CÓDIGO KONAMI', '¡Has desbloqueado el poder retro!\n+$100,000,000');
+                    }
+                }
+            } else { kPos = 0; }
+        });
+
+        function triggerBankEgg() {
+            bankClicks++;
+            if(bankClicks >= 50 && !game.secretAchievs['sa7']) {
+                checkSecretAchievements('sa7');
+                addMoney(50000000 * (1+game.prestige));
+                showGenModal('🚨 ASALTO BANCARIO', 'Has golpeado tanto la caja fuerte que ha cedido. ¡Te has llevado los fondos ocultos del banco!\n+$50,000,000');
+            }
+            setTimeout(() => { bankClicks = Math.max(0, bankClicks-1); }, 3000);
+        }
+
+        // --- CORE FUNCTIONS ---
+        function formatMoney(n) {
+            if(n === undefined || isNaN(n)) return '$0.00';
+            if (n < 1000) return '$' + n.toFixed(2);
+            const s = ["", "K", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "No", "Dc", "Ud", "Dd", "Td"];
+            const e = Math.floor(Math.log10(n)/3);
+            if(e >= s.length) return '$' + n.toExponential(2);
+            return '$' + (n / Math.pow(10, e*3)).toFixed(2) + s[e];
+        }
+
+        function getGlobalMult() {
+            let m = 1 + game.prestigeMult;
+            DB.vehicles.forEach(v => { if(game.vehs[v.id]) m += v.mult; });
+            game.inv.forEach(item => {
+                let sInfo = DB.secretItems.find(s => s.id === item.id);
+                if(sInfo) m += sInfo.mult;
+            });
+            return m;
+        }
+
+        function getGPS() {
+            let gps = 0;
+            DB.biz.forEach(b => {
+                let lvl = game.biz[b.id] || 0;
+                gps += b.baseInc * lvl;
+            });
+            DB.properties.forEach(p => {
+                if(game.props[p.id]) gps += p.inc;
+            });
+            return gps * getGlobalMult();
+        }
+
+        function triggerBigWin(amount) {
+            if(amount > 1e6 && document.body) {
+                document.body.classList.add('shake');
+                setTimeout(()=>document.body.classList.remove('shake'), 500);
+            }
+        }
+
+        function addMoney(amount, isClick=false) {
+            if(amount > 0) {
+                game.money += amount;
+                game.totalEarned += amount;
+                triggerBigWin(amount);
+                checkAchievements('money', game.totalEarned);
+                if(isClick) {
+                    game.stats.clicks++;
+                    checkAchievements('click', game.stats.clicks);
+                }
+            } else {
+                game.money += amount; 
+                game.stats.totalSpent += Math.abs(amount);
+            }
+        }
+
+        function showFloatText(text, x, y, isNeg=false) {
+            let el = document.createElement('div');
+            el.className = 'floating-num';
+            el.innerText = text;
+            el.style.left = x + 'px';
+            el.style.top = y + 'px';
+            if(isNeg) el.style.color = 'var(--neg)';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        function showNotification(msg, type='success') {
+            let box = document.getElementById('notif-box');
+            let el = document.createElement('div');
+            el.className = 'notif ' + type;
+            el.innerText = msg;
+            box.appendChild(el);
+            setTimeout(() => el.remove(), 3000);
+        }
+
+        // --- SAVE/LOAD ---
+        function saveGame(manual=false) {
+            game.lastSave = Date.now();
+            localStorage.setItem('moneySimData', JSON.stringify(game));
+            if(manual) showNotification('Partida guardada.');
+        }
+
+        function loadGame() {
+            let d = localStorage.getItem('moneySimData');
+            if(d) {
+                try {
+                    let parsed = JSON.parse(d);
+                    game = { ...game, ...parsed };
+                } catch(e) {}
+            }
+            
+            // Backward compatibility & Expansions init
+            if(!game.stats) game.stats = {clicks:0, casinoPlayed:0, casesOpened:0};
+            if(!game.stats.totalSpent) game.stats.totalSpent = 0;
+            if(!game.stats.bestItemVal) game.stats.bestItemVal = 0;
+            if(!game.stats.timePlayed) game.stats.timePlayed = 0;
+            if(!game.stats.maxGps) game.stats.maxGps = 0;
+            if(!game.stats.offlineGains) game.stats.offlineGains = 0;
+            if(!game.stats.investsMade) game.stats.investsMade = 0;
+            if(!game.stats.casinoWon) game.stats.casinoWon = 0;
+            if(!game.stats.plantsHarvested) game.stats.plantsHarvested = 0;
+            if(!game.stats.simCoinsMined) game.stats.simCoinsMined = 0;
+
+            if(!game.achievs) game.achievs = {};
+            if(!game.secretAchievs) game.secretAchievs = {};
+            if(!game.collection) game.collection = [];
+            if(!game.bank) game.bank = { balance: 0 };
+            if(!game.dailyReward) game.dailyReward = { lastClaim: 0, streak: 0 };
+            
+            // Migrate Quests if old array
+            if(Array.isArray(game.quests) || !game.quests.daily) {
+                game.quests = { daily: [], weekly: [], monthly: [], reset: {} };
+            }
+
+            if(!game.activities) game.activities = {};
+            DB.activities.forEach(a => { if(!game.activities[a.id]) game.activities[a.id] = { level: 0, xp: 0, isWorking: false, workStart: 0 }; });
+
+            if(!game.plants) {
+                game.plants = [];
+                for(let i=0; i<6; i++) game.plants.push({ seedId: null, plantedAt: 0 });
+            }
+
+            if(!game.crypto) {
+                game.crypto = { gpus: {}, simCoin: 0, coinPrice: 5000, trend: 1 };
+            }
+            DB.gpus.forEach(g => { if(!game.crypto.gpus[g.id]) game.crypto.gpus[g.id] = 0; });
+
+            if(!game.investments) game.investments = {};
+            if(!game.investPrices) game.investPrices = {};
+            if(!game.investTrends) game.investTrends = {};
+            DB.investments.forEach(i => {
+                if(!game.investPrices[i.id]) game.investPrices[i.id] = i.basePrice;
+                if(!game.investments[i.id]) game.investments[i.id] = {shares:0};
+                if(!game.investTrends[i.id]) game.investTrends[i.id] = 1;
+            });
+
+            if(!game.stockPrices) game.stockPrices = {};
+            DB.stocks.forEach(s => {
+                if(!game.stockPrices[s.id]) game.stockPrices[s.id] = s.basePrice;
+                if(!game.stocks[s.id]) game.stocks[s.id] = {shares:0};
+            });
+
+            if(!game.tradeCode) {
+                game.tradeCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+            }
+
+            calcOffline();
+            checkDaily();
+            if(game.market.length === 0) generateMarket();
+            
+            // Quests validation
+            generateQuests();
+
+            updateUI_Full();
+        }
+
+        function getCryptoHashrate() {
+            let h = 0;
+            DB.gpus.forEach(g => { h += (game.crypto.gpus[g.id] || 0) * g.hash; });
+            return h;
+        }
+
+        function calcOffline() {
+            let now = Date.now();
+            let delta = (now - game.lastSave) / 1000;
+            if(delta > 60) {
+                let earned = getGPS() * delta;
+                let minutes = Math.floor(delta / 60);
+                let bankInterest = 0;
+                
+                if(minutes > 0 && game.bank.balance > 0) {
+                    let oldBal = game.bank.balance;
+                    game.bank.balance = oldBal * Math.pow(1.01, minutes);
+                    bankInterest = game.bank.balance - oldBal;
+                }
+
+                let hash = getCryptoHashrate();
+                let mined = hash * 0.01 * delta;
+                if(mined > 0) {
+                    game.crypto.simCoin += mined;
+                    game.stats.simCoinsMined += mined;
+                    checkAchievements('crypto', game.stats.simCoinsMined);
+                }
+
+                if(earned > 0 || bankInterest > 0 || mined > 0) {
+                    addMoney(earned);
+                    game.stats.offlineGains += earned;
+                    showGenModal('Ganancias Offline', `Estuviste desconectado por ${formatTime(delta)}.\n\nNegocios/Propiedades: +${formatMoney(earned)}\nInterés Banco: +${formatMoney(bankInterest)}\nSimCoins Minadas: +${mined.toFixed(4)} SC`);
+                }
+            }
+        }
+
+        function checkDaily() {
+            let now = Date.now();
+            let diff = now - game.dailyReward.lastClaim;
+            let day = 86400000; 
+            if(diff > day) {
+                if(diff > 2 * day) game.dailyReward.streak = 1; 
+                else game.dailyReward.streak++;
+                
+                let reward = 1000 * Math.pow(1.5, game.dailyReward.streak - 1) * (1 + game.prestige);
+                showGenModal('📅 Recompensa Diaria', `Día ${game.dailyReward.streak} consecutivo.\nHas ganado ${formatMoney(reward)}.`);
+                addMoney(reward);
+                game.dailyReward.lastClaim = now;
+                saveGame();
+            }
+        }
+
+        function exportSave() {
+            let data = btoa(JSON.stringify(game));
+            showGenModal('Exportar Partida', 'Copia el texto de abajo:', true, data);
+        }
+
+        function importSave() {
+            let input = prompt("Pega tu partida exportada aquí:");
+            if(input) {
+                try {
+                    let parsed = JSON.parse(atob(input));
+                    if(parsed.money !== undefined) {
+                        game = parsed;
+                        saveGame();
+                        location.reload();
+                    }
+                } catch(e) { showNotification('Código inválido', 'error'); }
+            }
+        }
+
+        function hardReset() {
+            if(confirm('¿ESTÁS SEGURO? Perderás TODO, incluso prestigio y objetos secretos.')) {
+                localStorage.removeItem('moneySimData');
+                location.reload();
+            }
+        }
+
+        function formatTime(sec) {
+            let d = Math.floor(sec/86400);
+            let h = Math.floor((sec%86400)/3600);
+            let m = Math.floor((sec%3600)/60);
+            let s = Math.floor(sec%60);
+            if(d > 0) return `${d}d ${h}h`;
+            return `${h}h ${m}m ${s}s`;
+        }
+
+        function showGenModal(title, body, showInput=false, inputValue="") {
+            document.getElementById('mg-title').innerText = title;
+            document.getElementById('mg-body').innerText = body;
+            let inp = document.getElementById('mg-input');
+            if(showInput) {
+                inp.style.display = 'block';
+                inp.value = inputValue;
+            } else { inp.style.display = 'none'; }
+            document.getElementById('modal-gen').classList.add('show');
+        }
+        function closeGenModal() { document.getElementById('modal-gen').classList.remove('show'); }
+
+
+        // --- EASTER EGGS ---
+        function triggerTitleEasterEgg() {
+            easterEggClicks++;
+            if(easterEggClicks >= 10 && !game.secretAchievs['sa4']) {
+                checkSecretAchievements('sa4');
+                addMoney(1000000 * (1 + game.prestige));
+                showNotification('✨ Descubriste un secreto. +$1,000,000', 'success');
+            }
+            setTimeout(()=> { easterEggClicks = Math.max(0, easterEggClicks-1); }, 2000);
+        }
+
+        function triggerPixelEasterEgg() {
+            if(!game.secretAchievs['sa5']) {
+                checkSecretAchievements('sa5');
+                addMoney(5000000 * (1 + game.prestige));
+                showNotification('🌑 Encontraste el Rincón Oscuro. +$5,000,000', 'success');
+            }
+        }
+
+
+        // --- SYSTEMS LOGIC ---
+
+        // Trabajos
+        function getJobData(id) { return DB.jobs.find(j => j.id === id); }
+        function getJobSalary() {
+            let j = getJobData(game.job.id);
+            let lvlMult = 1 + (game.job.level * 0.5);
+            return j.baseSalary * lvlMult * getGlobalMult();
+        }
+        function getJobDuration() {
+            let j = getJobData(game.job.id);
+            return Math.max(500, j.baseDuration - (game.job.level * 50));
+        }
+        function getJobMaxXp() { return 10 + (game.job.level * 5); }
+        
+        function checkJobLevelUp() {
+            if(game.job.xp >= getJobMaxXp()) {
+                game.job.level++;
+                game.job.xp = 0;
+                showNotification('¡Nivel de Trabajo Aumentado!');
+                return true;
+            }
+            return false;
+        }
+
+        function workClick(e) {
+            if(game.job.isWorking) return;
+            game.job.isWorking = true;
+            game.job.workStart = Date.now();
+            let btn = e && e.target;
+            if(btn) btn.disabled = true;
+            renderJobs();
+        }
+
+        function studyJob() {
+            let jInfo = getJobData(game.job.id);
+            let cost = jInfo.baseSalary * 20 * (1+game.job.level); // cost escalates
+            if(game.money >= cost) {
+                addMoney(-cost);
+                game.job.xp++;
+                checkJobLevelUp();
+                renderJobs();
+                updateTopBar();
+            } else showNotification('Dinero insuficiente para estudiar', 'error');
+        }
+
+        function promoteJob(id) {
+            let jInfo = getJobData(id);
+            if(game.job.level >= jInfo.reqLevel) {
+                game.job.id = id;
+                game.job.level = 0;
+                game.job.xp = 0;
+                game.job.isWorking = false;
+                renderJobs();
+                showNotification('¡Ascendido a ' + jInfo.name + '!');
+            } else {
+                showNotification(`Necesitas Nivel ${jInfo.reqLevel} en tu trabajo actual`, 'error');
+            }
+        }
+
+        // Actividades Extra
+        function upgradeActivity(id) {
+            let act = DB.activities.find(a=>a.id===id);
+            let st = game.activities[id];
+            let cost = act.baseCost * Math.pow(2, st.level);
+            if(game.money >= cost) {
+                addMoney(-cost);
+                st.level++;
+                renderActivities();
+                updateTopBar();
+            } else showNotification('Dinero insuficiente', 'error');
+        }
+
+        function startActivity(id) {
+            let st = game.activities[id];
+            if(st.isWorking) return;
+            st.isWorking = true;
+            st.workStart = Date.now();
+            renderActivities();
+        }
+
+        // Plantas
+        function openSeedStore(index) {
+            selectedPotIndex = index;
+            renderSeedStore();
+            document.getElementById('modal-seeds').classList.add('show');
+        }
+        function closeSeedModal() {
+            document.getElementById('modal-seeds').classList.remove('show');
+        }
+        function plantSeed(seedId) {
+            let sInfo = DB.seeds.find(s=>s.id===seedId);
+            if(game.money >= sInfo.cost) {
+                addMoney(-sInfo.cost);
+                game.plants[selectedPotIndex] = {
+                    seedId: seedId,
+                    plantedAt: Date.now()
+                };
+                closeSeedModal();
+                renderPlants();
+                updateTopBar();
+            } else showNotification('Sin dinero suficiente para esta semilla.', 'error');
+        }
+        function harvestPlant(index) {
+            let pot = game.plants[index];
+            if(!pot || !pot.seedId) return;
+            
+            let sInfo = DB.seeds.find(s=>s.id===pot.seedId);
+            let now = Date.now();
+            let elapsedSecs = (now - pot.plantedAt) / 1000;
+            
+            if(elapsedSecs >= sInfo.growTime) {
+                let win = sInfo.yield * sInfo.sellPrice * getGlobalMult();
+                addMoney(win);
+                game.stats.plantsHarvested++;
+                checkAchievements('plants', game.stats.plantsHarvested);
+                
+                game.plants[index] = { seedId: null, plantedAt: 0 };
+                renderPlants();
+                updateTopBar();
+                showNotification(`¡Cosechado! +${formatMoney(win)}`);
+            }
+        }
+
+        // Crypto
+        function buyGPU(id) {
+            let g = DB.gpus.find(x=>x.id===id);
+            let count = game.crypto.gpus[id] || 0;
+            let cost = g.cost * Math.pow(1.2, count);
+            if(game.money >= cost) {
+                addMoney(-cost);
+                game.crypto.gpus[id]++;
+                renderCrypto();
+                updateTopBar();
+            } else showNotification('Dinero insuficiente', 'error');
+        }
+        function sellCrypto() {
+            if(game.crypto.simCoin > 0) {
+                let win = game.crypto.simCoin * game.crypto.coinPrice;
+                addMoney(win);
+                game.crypto.simCoin = 0;
+                renderCrypto();
+                updateTopBar();
+                showNotification(`Vendidas por ${formatMoney(win)}`);
+            }
+        }
+        function updateCryptoMarket() {
+            if(Math.random() < 0.2) game.crypto.trend = (Math.random() > 0.5) ? 1 : -1;
+            let change = 1 + (game.crypto.trend * 0.05) + ((Math.random() * 0.1) - 0.05);
+            game.crypto.coinPrice *= change;
+            if(game.crypto.coinPrice < 100) game.crypto.coinPrice = 100;
+            if(document.getElementById('tab-crypto').classList.contains('active')) renderCrypto();
+        }
+
+        // Negocios
+        function getBizCost(id) {
+            let b = DB.biz.find(x => x.id === id);
+            let lvl = game.biz[id] || 0;
+            return b.baseCost * Math.pow(1.15, lvl);
+        }
+        function buyBiz(id, e) {
+            let cost = getBizCost(id);
+            if(game.money >= cost) {
+                addMoney(-cost);
+                game.biz[id] = (game.biz[id] || 0) + 1;
+                renderBiz();
+                updateTopBar();
+                showFloatText(`-${formatMoney(cost)}`, e.clientX, e.clientY, true);
+                
+                let totLvl = Object.values(game.biz).reduce((a,b)=>a+b,0);
+                checkAchievements('biz', totLvl);
+            } else {
+                showNotification('Dinero insuficiente', 'error');
+            }
+        }
+
+        // Bolsa
+        function updateStocks() {
+            DB.stocks.forEach(s => {
+                let p = game.stockPrices[s.id];
+                let change = 1 + ((Math.random() * s.vol * 2) - s.vol);
+                p *= change;
+                if(p < s.basePrice * 0.1) p = s.basePrice * 0.1; 
+                game.stockPrices[s.id] = p;
+            });
+            if(document.getElementById('tab-stock').classList.contains('active')) renderStocks();
+        }
+        function buyStock(id) {
+            let p = game.stockPrices[id];
+            if(game.money >= p) {
+                addMoney(-p);
+                game.stocks[id].shares++;
+                renderStocks();
+                updateTopBar();
+            } else showNotification('Sin dinero', 'error');
+        }
+        function sellStock(id) {
+            if(game.stocks[id] && game.stocks[id].shares > 0) {
+                let p = game.stockPrices[id];
+                game.stocks[id].shares--;
+                addMoney(p);
+                renderStocks();
+                updateTopBar();
+            }
+        }
+
+        // Inversiones
+        function updateInvestments() {
+            DB.investments.forEach(i => {
+                if(Math.random() < 0.1) game.investTrends[i.id] = (Math.random() > 0.5) ? 1 : -1;
+                let trend = game.investTrends[i.id];
+                let change = 1 + (trend * i.vol) + ((Math.random() * i.vol) - (i.vol/2));
+                let p = game.investPrices[i.id];
+                p *= change;
+                if(p < i.basePrice * 0.05) p = i.basePrice * 0.05;
+                game.investPrices[i.id] = p;
+            });
+            if(document.getElementById('tab-invest').classList.contains('active')) renderInvests();
+        }
+        function buyInvest(id) {
+            let p = game.investPrices[id];
+            if(game.money >= p) {
+                addMoney(-p);
+                game.investments[id].shares++;
+                game.stats.investsMade++;
+                renderInvests();
+                updateTopBar();
+            } else showNotification('Sin dinero', 'error');
+        }
+        function sellInvest(id) {
+            if(game.investments[id] && game.investments[id].shares > 0) {
+                let p = game.investPrices[id];
+                game.investments[id].shares--;
+                addMoney(p);
+                renderInvests();
+                updateTopBar();
+            }
+        }
+
+        // Banco
+        function depositBank() {
+            let el = document.getElementById('bank-input');
+            let amount = parseFloat(el.value);
+            if(amount > 0 && amount <= game.money) {
+                addMoney(-amount);
+                game.bank.balance += amount;
+                el.value = '';
+                updateBankUI();
+                updateTopBar();
+            } else showNotification('Cantidad inválida', 'error');
+        }
+        function withdrawBank() {
+            let el = document.getElementById('bank-input');
+            let amount = parseFloat(el.value);
+            if(amount > 0 && amount <= game.bank.balance) {
+                game.bank.balance -= amount;
+                addMoney(amount);
+                el.value = '';
+                updateBankUI();
+                updateTopBar();
+            } else showNotification('Fondos insuficientes', 'error');
+        }
+
+        // Casino
+        function addCasinoPlay() {
+            game.stats.casinoPlayed++;
+            checkAchievements('casino', game.stats.casinoPlayed);
+            updateQuests('casino'); // FIX
+        }
+        function playDice(choice) {
+            let bet = parseInt(document.getElementById('dice-bet').value);
+            if(isNaN(bet) || bet <= 0 || bet > game.money) return showNotification('Apuesta inválida', 'error');
+            addMoney(-bet);
+            let roll = Math.floor(Math.random() * 100) + 1;
+            let win = (choice === 'over' && roll > 50) || (choice === 'under' && roll <= 50);
+            let resEl = document.getElementById('dice-result');
+            if(win) {
+                addMoney(bet * 2);
+                game.stats.casinoWon += (bet*2);
+                resEl.innerText = `🎲 Sacaste ${roll}. ¡Ganaste ${formatMoney(bet*2)}!`;
+                resEl.style.color = 'var(--pos)';
+            } else {
+                resEl.innerText = `🎲 Sacaste ${roll}. Perdiste.`;
+                resEl.style.color = 'var(--neg)';
+            }
+            updateTopBar();
+            addCasinoPlay();
+        }
+        function playRoulette(choice) {
+            let bet = parseInt(document.getElementById('roulette-bet').value);
+            if(isNaN(bet) || bet <= 0 || bet > game.money) return showNotification('Apuesta inválida', 'error');
+            addMoney(-bet);
+            let num = Math.floor(Math.random() * 37);
+            let color = (num === 0) ? 'green' : (num % 2 === 0 ? 'red' : 'black');
+            let resEl = document.getElementById('roulette-result');
+            let txt = `Salió ${num} (${color === 'red' ? 'Rojo' : color === 'black' ? 'Negro' : 'Verde'}). `;
+            if(choice === color) {
+                let mult = (color === 'green') ? 14 : 2;
+                addMoney(bet * mult);
+                game.stats.casinoWon += (bet*mult);
+                resEl.innerText = txt + `¡Ganaste ${formatMoney(bet*mult)}!`;
+                resEl.style.color = 'var(--pos)';
+            } else {
+                resEl.innerText = txt + "Perdiste.";
+                resEl.style.color = 'var(--neg)';
+            }
+            updateTopBar();
+            addCasinoPlay();
+        }
+
+        let bjDeck = [], bjPlayer = [], bjDealer = [], bjBet = 0;
+        function startBlackjack() {
+            bjBet = parseInt(document.getElementById('bj-bet').value);
+            if(isNaN(bjBet) || bjBet <= 0 || bjBet > game.money) return showNotification('Apuesta inválida', 'error');
+            addMoney(-bjBet);
+            
+            let d = [];
+            ['♠','♥','♦','♣'].forEach(s => {
+                for(let i=2; i<=10; i++) d.push({v:i, s:s, n:i});
+                ['J','Q','K'].forEach(f => d.push({v:10, s:s, n:f}));
+                d.push({v:11, s:s, n:'A'});
+            });
+            bjDeck = d.sort(() => Math.random() - 0.5);
+            bjPlayer = []; bjDealer = [];
+            
+            bjPlayer.push(bjDeck.pop()); bjPlayer.push(bjDeck.pop());
+            bjDealer.push(bjDeck.pop()); bjDealer.push(bjDeck.pop());
+            
+            document.getElementById('bj-start-controls').style.display = 'none';
+            document.getElementById('bj-game-area').style.display = 'block';
+            document.getElementById('bj-result').innerText = '';
+            updateBJUI(true);
+            updateTopBar();
+            addCasinoPlay();
+        }
+        function calcBJScore(hand) {
+            let score = 0, aces = 0;
+            hand.forEach(c => { score += c.v; if(c.n==='A') aces++; });
+            while(score > 21 && aces > 0) { score -= 10; aces--; }
+            return score;
+        }
+        function renderBJCard(c, hidden=false) {
+            if(hidden) return `<span class="card-playing">?</span>`;
+            let color = (c.s==='♥'||c.s==='♦') ? 'red' : '';
+            return `<span class="card-playing ${color}">${c.n}${c.s}</span>`;
+        }
+        function updateBJUI(hideDealer=false) {
+            document.getElementById('bj-player-cards').innerHTML = bjPlayer.map(c=>renderBJCard(c)).join('');
+            document.getElementById('bj-player-score').innerText = '(' + calcBJScore(bjPlayer) + ')';
+            
+            if(hideDealer) {
+                document.getElementById('bj-dealer-cards').innerHTML = renderBJCard(bjDealer[0]) + renderBJCard(null, true);
+                document.getElementById('bj-dealer-score').innerText = '';
+            } else {
+                document.getElementById('bj-dealer-cards').innerHTML = bjDealer.map(c=>renderBJCard(c)).join('');
+                document.getElementById('bj-dealer-score').innerText = '(' + calcBJScore(bjDealer) + ')';
+            }
+        }
+        function bjHit() {
+            bjPlayer.push(bjDeck.pop());
+            let s = calcBJScore(bjPlayer);
+            updateBJUI(true);
+            if(s > 21) endBJ('lose');
+        }
+        function bjStand() {
+            updateBJUI(false);
+            let loop = setInterval(() => {
+                if(calcBJScore(bjDealer) < 17) {
+                    bjDealer.push(bjDeck.pop());
+                    updateBJUI(false);
+                } else {
+                    clearInterval(loop);
+                    let pS = calcBJScore(bjPlayer), dS = calcBJScore(bjDealer);
+                    if(dS > 21 || pS > dS) endBJ('win');
+                    else if(pS === dS) endBJ('push');
+                    else endBJ('lose');
+                }
+            }, 500);
+        }
+        function endBJ(res) {
+            let resEl = document.getElementById('bj-result');
+            if(res === 'win') {
+                addMoney(bjBet * 2);
+                game.stats.casinoWon += (bjBet*2);
+                resEl.innerText = `¡Ganaste ${formatMoney(bjBet*2)}!`;
+                resEl.style.color = 'var(--pos)';
+            } else if(res === 'push') {
+                addMoney(bjBet);
+                resEl.innerText = "Empate. Se devuelve la apuesta.";
+                resEl.style.color = 'var(--text-main)';
+            } else {
+                resEl.innerText = "Perdiste.";
+                resEl.style.color = 'var(--neg)';
+            }
+            document.getElementById('bj-start-controls').style.display = 'flex';
+            document.getElementById('bj-game-area').style.display = 'none';
+            updateTopBar();
+        }
+
+        // Cases System
+        function openCase(id) {
+            let cInfo = DB.cases.find(c => c.id === id);
+            if(game.money < cInfo.cost) return showNotification('Dinero insuficiente', 'error');
+            addMoney(-cInfo.cost);
+            updateTopBar();
+            
+            game.stats.casesOpened++;
+            checkAchievements('cases', game.stats.casesOpened);
+            updateQuests('cases'); // FIX
+
+            let drops = [];
+            for(let i=0; i<60; i++) {
+                let r = Math.random();
+                let rarity;
+                if(r < 0.000001) rarity = DB.rarities.find(x=>x.id==='secret');
+                else {
+                    let cumul = 0;
+                    for(let rar of DB.rarities) {
+                        if(rar.id === 'secret') continue;
+                        cumul += rar.chance;
+                        if(r <= cumul) { rarity = rar; break; }
+                    }
+                }
+                if(!rarity) rarity = DB.rarities[0];
+                
+                let pool = (rarity.id === 'secret') ? DB.secretItems : DB.items;
+                let item = pool[Math.floor(Math.random() * pool.length)];
+                drops.push({ rarity, item });
+            }
+
+            let winnerIndex = 50; 
+            let winnerDrop = drops[winnerIndex];
+            pendingCaseWinner = { winnerDrop, cInfo };
+
+            // Render Track
+            let track = document.getElementById('mc-track');
+            track.innerHTML = '';
+            track.style.transition = 'none';
+            track.style.transform = 'translateX(0)';
+
+            drops.forEach((d, idx) => {
+                let el = document.createElement('div');
+                el.className = 'case-item';
+                el.style.setProperty('--item-color', d.rarity.color);
+                let glow = d.rarity.id === 'secret' ? 'secret-glow' : '';
+                el.innerHTML = `
+                    <div class="case-item-icon ${glow}" style="border-radius:50%;">${d.item.icon}</div>
+                    <div class="case-item-name" style="color:${d.rarity.color}">${d.item.name}</div>
+                `;
+                track.appendChild(el);
+            });
+
+            document.getElementById('mc-title').innerText = cInfo.name;
+            document.getElementById('mc-winner').innerText = '';
+            document.getElementById('mc-close').style.display = 'none';
+            document.getElementById('modal-case').classList.add('show');
+
+            setTimeout(() => {
+                let itemWidth = 100;
+                let offset = (winnerIndex * itemWidth) + (itemWidth/2) - (track.parentElement.clientWidth / 2);
+                offset += (Math.random() * 80) - 40;
+                
+                track.style.transition = 'transform 5s cubic-bezier(0.05, 0.9, 0.1, 1)';
+                track.style.transform = `translateX(-${offset}px)`;
+
+                setTimeout(() => {
+                    let { winnerDrop, cInfo } = pendingCaseWinner;
+                    let isSec = winnerDrop.rarity.id === 'secret';
+                    if(isSec) {
+                        document.body.classList.add('shake');
+                        setTimeout(()=>document.body.classList.remove('shake'), 1000);
+                        checkSecretAchievements('sa1');
+                    }
+                    
+                    let val = winnerDrop.item.baseVal * winnerDrop.rarity.valMult * cInfo.mult;
+                    if(val > game.stats.bestItemVal) game.stats.bestItemVal = val;
+                    
+                    document.getElementById('mc-winner').innerHTML = `¡Obtuviste <span style="color:${winnerDrop.rarity.color}; ${isSec?'text-shadow:0 0 10px '+winnerDrop.rarity.color:''}">${winnerDrop.item.name}</span>!`;
+                    document.getElementById('mc-close').style.display = 'inline-block';
+                }, 5200);
+            }, 100);
+        }
+        function closeCaseModal() {
+            if(pendingCaseWinner) {
+                let { winnerDrop, cInfo } = pendingCaseWinner;
+                let val = winnerDrop.item.baseVal * winnerDrop.rarity.valMult * cInfo.mult;
+                game.inv.push({
+                    uid: ++uidCounter,
+                    id: winnerDrop.item.id,
+                    rarityId: winnerDrop.rarity.id,
+                    val: val
+                });
+                addToCollection(winnerDrop.item.id);
+                pendingCaseWinner = null;
+                renderInv();
+                saveGame();
+            }
+            document.getElementById('modal-case').classList.remove('show');
+        }
+
+        // Inventory
+        function addToCollection(itemId) {
+            if(!game.collection) game.collection = [];
+            if(!game.collection.includes(itemId)) {
+                game.collection.push(itemId);
+            }
+        }
+
+        function getRarityInfo(rid) { return DB.rarities.find(r => r.id === rid); }
+        function getItemInfo(iid) { 
+            let i = DB.items.find(x => x.id === iid);
+            if(i) return i;
+            return DB.secretItems.find(x => x.id === iid);
+        }
+        function sellItem(uid) {
+            let idx = game.inv.findIndex(i => i.uid === uid);
+            if(idx > -1) {
+                let item = game.inv[idx];
+                addMoney(item.val);
+                game.inv.splice(idx, 1);
+                renderInv();
+                updateTopBar();
+                showNotification(`Vendido por ${formatMoney(item.val)}`);
+            }
+        }
+        function sellAllInventory() {
+            let total = 0;
+            game.inv.forEach(i => total += i.val);
+            game.inv = [];
+            addMoney(total);
+            renderInv();
+            updateTopBar();
+            if(total > 0) showNotification(`Inventario vendido por ${formatMoney(total)}`);
+        }
+
+        // Market
+        function generateMarket() {
+            game.market = [];
+            for(let i=0; i<15; i++) {
+                let r = Math.random();
+                let rarity;
+                if(r < 0.0001) rarity = DB.rarities.find(x=>x.id==='secret');
+                else {
+                    let cumul = 0;
+                    for(let rar of DB.rarities) {
+                        if(rar.id === 'secret') continue;
+                        cumul += rar.chance;
+                        if(r <= cumul) { rarity = rar; break; }
+                    }
+                }
+                if(!rarity) rarity = DB.rarities[0];
+                
+                let pool = rarity.id === 'secret' ? DB.secretItems : DB.items;
+                let item = pool[Math.floor(Math.random() * pool.length)];
+                
+                let baseVal = item.baseVal * rarity.valMult * (1 + (Math.random()*0.5));
+                game.market.push({ uid: ++uidCounter, id: item.id, rarityId: rarity.id, price: baseVal * 1.5 });
+            }
+            renderMarket();
+        }
+        function refreshMarket() {
+            if(game.money >= 1000) { addMoney(-1000); generateMarket(); updateTopBar();
+            } else showNotification('Sin dinero', 'error');
+        }
+        function updateMarketFilter() {
+            marketFilter.search = document.getElementById('market-search').value;
+            marketFilter.rarity = document.getElementById('market-rarity').value;
+            renderMarket();
+        }
+        function buyMarketItem(uid) {
+            let idx = game.market.findIndex(i => i.uid === uid);
+            if(idx > -1) {
+                let m = game.market[idx];
+                if(game.money >= m.price) {
+                    addMoney(-m.price);
+                    game.inv.push({ uid: ++uidCounter, id: m.id, rarityId: m.rarityId, val: m.price * 0.8 });
+                    addToCollection(m.id);
+                    game.market.splice(idx, 1);
+                    renderMarket(); renderInv(); updateTopBar();
+                } else showNotification('Sin dinero', 'error');
+            }
+        }
+
+        // Prop & Veh
+        function buyProp(id) {
+            let p = DB.properties.find(x => x.id === id);
+            if(!game.props[id] && game.money >= p.cost) {
+                addMoney(-p.cost); game.props[id] = true; renderProps(); updateTopBar();
+            }
+        }
+        function buyVeh(id) {
+            let v = DB.vehicles.find(x => x.id === id);
+            if(!game.vehs[id] && game.money >= v.cost) {
+                addMoney(-v.cost); game.vehs[id] = true; renderVehs(); updateTopBar();
+            }
+        }
+
+        // Quests
+        function buildQuestArray(type, mult) {
+            return [
+                { id: type+'1', text: 'Haz click '+(100*mult)+' veces', type: 'click', target: 100*mult, prog: 0, reward: 5000*mult, done: false },
+                { id: type+'2', text: 'Abre '+(5*mult)+' Cajas', type: 'cases', target: 5*mult, prog: 0, reward: 25000*mult, done: false },
+                { id: type+'3', text: 'Juega Casino '+(10*mult)+' veces', type: 'casino', target: 10*mult, prog: 0, reward: 10000*mult, done: false }
+            ];
+        }
+
+        function generateQuests() {
+            let now = Date.now();
+            let r = game.quests.reset;
+            
+            if(!r.daily || now > r.daily) { game.quests.daily = buildQuestArray('daily', 1); r.daily = now + 864e5; }
+            if(!r.weekly || now > r.weekly) { game.quests.weekly = buildQuestArray('weekly', 10); r.weekly = now + 864e5*7; }
+            if(!r.monthly || now > r.monthly) { game.quests.monthly = buildQuestArray('monthly', 50); r.monthly = now + 864e5*30; }
+            
+            if(document.getElementById('tab-quests').classList.contains('active')) renderQuests();
+        }
+
+        function updateQuests(type, amt=1) {
+            let updated = false;
+            ['daily', 'weekly', 'monthly'].forEach(cat => {
+                game.quests[cat].forEach(q => {
+                    if(!q.done && q.type === type) {
+                        q.prog += amt;
+                        if(q.prog >= q.target) {
+                            q.done = true;
+                            addMoney(q.reward);
+                            showNotification('¡Misión Completada! +' + formatMoney(q.reward));
+                        }
+                        updated = true;
+                    }
+                });
+            });
+            if(updated && document.getElementById('tab-quests').classList.contains('active')) renderQuests();
+        }
+
+        // Achievements & Secrets
+        function checkAchievements(type, val) {
+            let updated = false;
+            DB.achievements.forEach(a => {
+                if(a.type === type && !game.achievs[a.id] && val >= a.req) {
+                    game.achievs[a.id] = true;
+                    showNotification('🏆 Logro: ' + a.name);
+                    updated = true;
+                }
+            });
+            if(updated && document.getElementById('tab-achiev').classList.contains('active')) renderAchievs();
+        }
+        function checkSecretAchievements(id) {
+            if(!game.secretAchievs[id]) {
+                game.secretAchievs[id] = true;
+                let ach = DB.secretAchievements.find(a=>a.id===id);
+                showNotification('👁️ Logro Secreto: ' + ach.name, 'success');
+                if(document.getElementById('tab-achiev').classList.contains('active')) renderAchievs();
+            }
+        }
+
+        // Prestige
+        function calcPrestigeGain() {
+            let gain = Math.pow(game.totalEarned / 1e6, 0.3) * 0.01; 
+            return isNaN(gain) ? 0 : Math.max(0, gain);
+        }
+        function doPrestige() {
+            let gain = calcPrestigeGain();
+            if(gain < 0.01) return showNotification('No tienes suficientes ganancias para prestigiar', 'error');
+            if(confirm(`¿Ascender? Perderás progreso (excepto colección, vehículos y stats) pero ganarás +${(gain).toFixed(2)} multiplicador permanente y desbloquearás nuevo contenido.`)) {
+                game.prestige++;
+                game.prestigeMult += gain;
+                game.money = 0;
+                game.job = { id: 'j1', level: 0, xp: 0, isWorking: false, workStart: 0 };
+                game.biz = {};
+                game.stocks = {};
+                game.investments = {};
+                game.props = {};
+                game.bank.balance = 0;
+                
+                game.plants = [];
+                for(let i=0; i<6; i++) game.plants.push({ seedId: null, plantedAt: 0 });
+                
+                game.crypto = { gpus: {}, simCoin: 0, coinPrice: 5000, trend: 1 };
+                DB.gpus.forEach(g => game.crypto.gpus[g.id] = 0);
+
+                DB.activities.forEach(a => game.activities[a.id] = { level: 0, xp: 0, isWorking: false, workStart: 0 });
+                DB.stocks.forEach(s => game.stockPrices[s.id] = s.basePrice);
+                DB.investments.forEach(i => game.investPrices[i.id] = i.basePrice);
+                
+                checkAchievements('prestige', game.prestige);
+                saveGame();
+                location.reload();
+            }
+        }
+
+        // Random Events
+        function triggerRandomEvent() {
+            let r = Math.random();
+            if(r < 0.2) {
+                let win = 1000000 * (1 + game.prestige);
+                addMoney(win);
+                showGenModal('🌍 ¡EVENTO ULTRA RARO!', `¡Has ganado la Lotería Mundial!\n+${formatMoney(win)}`);
+                checkSecretAchievements('sa3');
+            } else if (r < 0.4) {
+                for(let k in game.stockPrices) game.stockPrices[k] *= 0.5;
+                for(let k in game.investPrices) game.investPrices[k] *= 0.5;
+                showGenModal('📉 ¡CRISIS!', 'Colapso Global. Los mercados se han desplomado un 50%.');
+                checkSecretAchievements('sa2');
+                renderStocks(); renderInvests();
+            } else if (r < 0.6) {
+                for(let k in game.stockPrices) game.stockPrices[k] *= 2;
+                for(let k in game.investPrices) game.investPrices[k] *= 2;
+                showGenModal('🚀 ¡BOOM HISTÓRICO!', 'Los mercados han subido un 100% repéntinamente.');
+                renderStocks(); renderInvests();
+            } else if (r < 0.8) {
+                let win = getGPS() * 3600; 
+                if(win < 1000) win = 1000;
+                addMoney(win);
+                showGenModal('🗺️ ¡EVENTO ULTRA RARO!', `Has encontrado un tesoro oculto.\n+${formatMoney(win)}`);
+            } else {
+                let highest = 0; let hId = null;
+                for(let k in game.investPrices) { if(game.investPrices[k] > highest) { highest = game.investPrices[k]; hId = k; } }
+                if(hId) {
+                    game.investPrices[hId] *= 5;
+                    showGenModal('✨ ¡MILAGRO!', `La inversión en ${DB.investments.find(i=>i.id===hId).name} ha explotado x5.`);
+                    renderInvests();
+                }
+            }
+            document.body.classList.add('shake');
+            setTimeout(()=>document.body.classList.remove('shake'), 500);
+        }
+
+        // --- RENDERING ---
+        function updateTopBar() {
+            document.getElementById('ui-money').innerText = formatMoney(game.money);
+            document.getElementById('ui-gps').innerText = formatMoney(getGPS()) + '/s';
+            document.getElementById('ui-mult').innerText = 'x' + getGlobalMult().toFixed(2);
+            document.getElementById('ui-prestige').innerText = game.prestige;
+        }
+
+        function renderJobs() {
+            let c = document.getElementById('grid-jobs');
+            c.innerHTML = '';
+            let cJobData = getJobData(game.job.id);
+
+            DB.jobs.forEach(j => {
+                let isCurrent = (game.job.id === j.id);
+                let canPromote = !isCurrent && game.job.level >= j.reqLevel && DB.jobs.findIndex(x=>x.id===game.job.id) < DB.jobs.findIndex(x=>x.id===j.id);
+                
+                let costStudy = j.baseSalary * 20 * (1+ (isCurrent?game.job.level:0));
+                
+                let html = `
+                <div class="card" style="${isCurrent ? 'border-color:var(--accent)' : ''}">
+                    <div class="card-header">
+                        <div class="card-icon">${j.icon}</div>
+                        <div class="card-info">
+                            <h3>${j.name}</h3>
+                            <p>Req Nivel: ${j.reqLevel}</p>
+                            <div class="card-stats">Salario: ${formatMoney(j.baseSalary * (1 + ((isCurrent?game.job.level:0) * 0.5)) * getGlobalMult())}</div>
+                        </div>
+                    </div>
+                    ${isCurrent ? `
+                        <div style="font-size:12px;">Nivel: ${game.job.level} | XP: ${game.job.xp}/${getJobMaxXp()}</div>
+                        <div class="progress-container" style="height:15px; margin: 10px 0;">
+                            <div class="progress-bar" id="job-prog" style="width:0%;"></div>
+                        </div>
+                        <div style="display:flex; gap:10px;">
+                            <button class="btn btn-action" onclick="workClick(event)" ${game.job.isWorking?'disabled':''}>Trabajar</button>
+                            <button class="btn btn-buy" style="font-size:11px;" onclick="studyJob()">Estudiar XP<br>-${formatMoney(costStudy)}</button>
+                        </div>
+                    ` : `
+                        <button class="btn btn-buy" ${canPromote?'':'disabled'} onclick="promoteJob('${j.id}')">Ascender</button>
+                    `}
+                </div>`;
+                c.innerHTML += html;
+            });
+        }
+
+        function renderActivities() {
+            let c = document.getElementById('grid-activities');
+            c.innerHTML = '';
+            DB.activities.forEach(act => {
+                let st = game.activities[act.id];
+                let cost = act.baseCost * Math.pow(2, st.level);
+                let rew = act.baseReward * Math.pow(1.5, st.level) * getGlobalMult();
+                
+                let html = `
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">${act.icon}</div>
+                        <div class="card-info">
+                            <h3>${act.name}</h3>
+                            <p>Nivel ${st.level}</p>
+                            <div class="card-stats">Recompensa: ${formatMoney(rew)}</div>
+                        </div>
+                    </div>
+                    <div class="progress-container" style="height:10px; margin:10px 0;">
+                        <div class="progress-bar" id="prog-${act.id}" style="width:0%"></div>
+                    </div>
+                    <div style="display:flex; gap:10px;">
+                        <button class="btn btn-action" onclick="startActivity('${act.id}')" ${st.isWorking?'disabled':''}>Iniciar</button>
+                        <button class="btn btn-buy" onclick="upgradeActivity('${act.id}')" style="font-size:12px;">Mejorar<br>${formatMoney(cost)}</button>
+                    </div>
+                </div>`;
+                c.innerHTML += html;
+            });
+        }
+
+        function renderSeedStore() {
+            let c = document.getElementById('seed-list');
+            c.innerHTML = '';
+            DB.seeds.forEach(s => {
+                let canBuy = game.money >= s.cost;
+                c.innerHTML += `
+                <div class="card" style="padding:15px; text-align:center;">
+                    <div style="font-size:40px;">${s.icon}</div>
+                    <h3 style="margin:5px 0;">${s.name}</h3>
+                    <p style="font-size:11px; color:var(--text-sec);">Crece: ${formatTime(s.growTime)}</p>
+                    <p style="font-size:12px; color:var(--pos); font-weight:bold; margin-bottom:10px;">Venta: ${formatMoney(s.sellPrice * s.yield)}</p>
+                    <button class="btn ${canBuy?'btn-buy':''}" ${canBuy?'':'disabled'} onclick="plantSeed('${s.id}')">Comprar - ${formatMoney(s.cost)}</button>
+                </div>`;
+            });
+        }
+
+        function renderPlants() {
+            let c = document.getElementById('grid-plants');
+            if(!c) return;
+            c.innerHTML = '';
+            let now = Date.now();
+            
+            game.plants.forEach((pot, idx) => {
+                if(!pot.seedId) {
+                    c.innerHTML += `
+                    <div class="pot" onclick="openSeedStore(${idx})">
+                        <div class="pot-icon" style="opacity:0.3;">🌱</div>
+                        <button class="btn" style="width:auto; pointer-events:none;">Plantar Semilla</button>
+                    </div>`;
+                } else {
+                    let sInfo = DB.seeds.find(s=>s.id===pot.seedId);
+                    let elapsed = (now - pot.plantedAt) / 1000;
+                    let isReady = elapsed >= sInfo.growTime;
+                    let pct = Math.min(100, (elapsed / sInfo.growTime) * 100);
+                    
+                    c.innerHTML += `
+                    <div class="pot ${isReady?'ready':''}" onclick="${isReady?`harvestPlant(${idx})`:''}">
+                        <div class="pot-icon">${isReady ? sInfo.icon : '🌱'}</div>
+                        <div style="font-weight:bold; color:#fff; text-shadow:0 0 5px #000; z-index:2;">${sInfo.name}</div>
+                        ${isReady 
+                            ? `<button class="btn btn-action" style="width:80%; margin-top:10px; pointer-events:none;">Cosechar</button>` 
+                            : `<div class="progress-container" style="width:80%; margin-top:15px; height:6px;"><div class="progress-bar" style="width:${pct}%"></div></div>`
+                        }
+                    </div>`;
+                }
+            });
+        }
+
+        function renderCrypto() {
+            let gpusGrid = document.getElementById('grid-gpus');
+            if(!gpusGrid) return;
+            
+            document.getElementById('crypto-balance').innerText = game.crypto.simCoin.toFixed(4) + ' SC';
+            document.getElementById('crypto-hash').innerText = getCryptoHashrate() + ' H/s';
+            document.getElementById('crypto-price').innerText = formatMoney(game.crypto.coinPrice);
+            
+            let tEl = document.getElementById('crypto-trend');
+            if(game.crypto.trend > 0) { tEl.innerText = 'Tendencia Alcista ▲'; tEl.style.color = 'var(--pos)'; }
+            else { tEl.innerText = 'Tendencia Bajista ▼'; tEl.style.color = 'var(--neg)'; }
+
+            gpusGrid.innerHTML = '';
+            DB.gpus.forEach(g => {
+                let count = game.crypto.gpus[g.id] || 0;
+                let cost = g.cost * Math.pow(1.2, count);
+                gpusGrid.innerHTML += `
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">${g.icon}</div>
+                        <div class="card-info">
+                            <h3>${g.name}</h3>
+                            <p>Cantidad: ${count}</p>
+                            <div class="card-stats">+${g.hash} H/s c/u</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-buy" onclick="buyGPU('${g.id}')">Comprar - ${formatMoney(cost)}</button>
+                </div>`;
+            });
+        }
+
+        function renderBiz() {
+            let c = document.getElementById('grid-biz');
+            c.innerHTML = '';
+            DB.biz.forEach(b => {
+                let locked = (b.reqPrestige || 0) > game.prestige;
+                if(locked) {
+                    c.innerHTML += `<div class="card locked" style="align-items:center; justify-content:center;"><div style="font-size:40px;">🔒</div><h3>Desbloquea en Prestigio ${b.reqPrestige}</h3></div>`;
+                    return;
+                }
+                let lvl = game.biz[b.id] || 0;
+                let cost = getBizCost(b.id);
+                let html = `
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">${b.icon}</div>
+                        <div class="card-info">
+                            <h3>${b.name}</h3>
+                            <p>Nivel ${lvl}</p>
+                            <div class="card-stats">Produce: ${formatMoney(b.baseInc * lvl)}/s</div>
+                        </div>
+                    </div>
+                    <button class="btn btn-buy" onclick="buyBiz('${b.id}', event)">Mejorar - ${formatMoney(cost)}</button>
+                </div>`;
+                c.innerHTML += html;
+            });
+        }
+
+        function renderStocks() {
+            let c = document.getElementById('list-stocks');
+            c.innerHTML = '';
+            DB.stocks.forEach(s => {
+                let p = game.stockPrices[s.id];
+                let trend = (p > s.basePrice) ? 'stock-trend-up' : 'stock-trend-down';
+                let arrow = (p > s.basePrice) ? '▲' : '▼';
+                let shares = game.stocks[s.id] ? game.stocks[s.id].shares : 0;
+                let html = `
+                <div class="stock-row">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:24px;">${s.icon}</span>
+                        <div>
+                            <div style="font-weight:bold;">${s.name}</div>
+                            <div style="font-size:12px; color:var(--text-sec)">Acciones: ${shares}</div>
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div class="${trend}" style="font-weight:bold;">${formatMoney(p)} ${arrow}</div>
+                        <div style="margin-top:5px; display:flex; gap:5px;">
+                            <button class="btn" style="padding:5px 10px; width:auto;" onclick="buyStock('${s.id}')">Comprar</button>
+                            <button class="btn" style="padding:5px 10px; width:auto;" onclick="sellStock('${s.id}')">Vender</button>
+                        </div>
+                    </div>
+                </div>`;
+                c.innerHTML += html;
+            });
+        }
+
+        function renderInvests() {
+            let c = document.getElementById('list-invests');
+            c.innerHTML = '';
+            DB.investments.forEach(i => {
+                let p = game.investPrices[i.id];
+                let trendVal = game.investTrends[i.id];
+                let trendCls = trendVal > 0 ? 'stock-trend-up' : 'stock-trend-down';
+                let arrow = trendVal > 0 ? '↗' : '↘';
+                let shares = game.investments[i.id] ? game.investments[i.id].shares : 0;
+                let html = `
+                <div class="stock-row">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:24px;">${i.icon}</span>
+                        <div>
+                            <div style="font-weight:bold;">${i.name}</div>
+                            <div style="font-size:12px; color:var(--text-sec)">Títulos: ${shares}</div>
+                        </div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div class="${trendCls}" style="font-weight:bold;">${formatMoney(p)} ${arrow}</div>
+                        <div style="margin-top:5px; display:flex; gap:5px;">
+                            <button class="btn" style="padding:5px 10px; width:auto;" onclick="buyInvest('${i.id}')">Comprar</button>
+                            <button class="btn" style="padding:5px 10px; width:auto;" onclick="sellInvest('${i.id}')">Vender</button>
+                        </div>
+                    </div>
+                </div>`;
+                c.innerHTML += html;
+            });
+        }
+
+        function renderBankUI() {
+            document.getElementById('bank-balance').innerText = formatMoney(game.bank.balance);
+        }
+        function updateBankUI() { renderBankUI(); } 
+
+        function renderCases() {
+            let c = document.getElementById('grid-cases');
+            c.innerHTML = '';
+            DB.cases.forEach(ca => {
+                let locked = (ca.reqPrestige || 0) > game.prestige;
+                if(locked) {
+                    c.innerHTML += `<div class="card locked" style="align-items:center; justify-content:center;"><div style="font-size:40px;">🔒</div><h3>Prestigio ${ca.reqPrestige}</h3></div>`;
+                    return;
+                }
+                let html = `
+                <div class="card" style="align-items:center; text-align:center;">
+                    <div style="font-size:50px; margin-bottom:10px;">${ca.icon}</div>
+                    <h3>${ca.name}</h3>
+                    <p style="color:var(--text-sec); font-size:12px; margin-bottom:15px;">Drops x${ca.mult}</p>
+                    <button class="btn btn-action" onclick="openCase('${ca.id}')">Abrir - ${formatMoney(ca.cost)}</button>
+                </div>`;
+                c.innerHTML += html;
+            });
+        }
+
+        function renderInv() {
+            let c = document.getElementById('grid-inv');
+            c.innerHTML = '';
+            let sorted = [...game.inv].sort((a,b)=>b.val - a.val);
+            sorted.forEach(i => {
+                let rInfo = getRarityInfo(i.rarityId);
+                let iInfo = getItemInfo(i.id);
+                let isSec = i.rarityId === 'secret';
+                let html = `
+                <div class="inv-item" style="--item-color:${rInfo.color}" onclick="sellItem(${i.uid})" title="Click para vender">
+                    <div class="${isSec?'secret-glow':''}" style="font-size:30px; ${isSec?'border-radius:50%;':''}">${iInfo.icon}</div>
+                    <div style="font-size:11px; margin:5px 0; color:${rInfo.color}; ${isSec?'font-weight:bold;':''}">${iInfo.name}</div>
+                    <div style="font-size:12px; font-weight:bold; color:var(--pos)">${formatMoney(i.val)}</div>
+                </div>`;
+                c.innerHTML += html;
+            });
+        }
+
+        function renderMarket() {
+            let c = document.getElementById('grid-market');
+            c.innerHTML = '';
+            
+            let filtered = game.market.filter(m => {
+                let iInfo = getItemInfo(m.id);
+                if(marketFilter.search && !iInfo.name.toLowerCase().includes(marketFilter.search.toLowerCase())) return false;
+                if(marketFilter.rarity && m.rarityId !== marketFilter.rarity) return false;
+                return true;
+            });
+
+            filtered.forEach(m => {
+                let rInfo = getRarityInfo(m.rarityId);
+                let iInfo = getItemInfo(m.id);
+                let html = `
+                <div class="card" style="align-items:center; text-align:center;">
+                    <div style="font-size:40px;">${iInfo.icon}</div>
+                    <h3 style="color:${rInfo.color}; margin:10px 0; font-size:14px;">${iInfo.name}</h3>
+                    <button class="btn btn-buy" onclick="buyMarketItem(${m.uid})">Comprar - ${formatMoney(m.price)}</button>
+                </div>`;
+                c.innerHTML += html;
+            });
+        }
+
+        let collFilter = 'all';
+        function setCollFilter(f, btn) {
+            collFilter = f;
+            document.querySelectorAll('.coll-filter-btn').forEach(b => b.classList.remove('active'));
+            if(btn) btn.classList.add('active');
+            renderCollection();
+        }
+
+        function getItemRarityId(item) {
+            // Secret items always secret rarity
+            if(DB.secretItems && DB.secretItems.find(x => x.id === item.id)) return 'secret';
+            // Regular items from cases get a rarity assigned — use first unlocked instance's rarityId from inv
+            let invItem = game.inv.find(i => i.id === item.id);
+            if(invItem) return invItem.rarityId;
+            // If not in inventory (not obtained), treat as common for sorting
+            return 'common';
+        }
+
+        function renderCollection() {
+            let c = document.getElementById('grid-collection');
+            c.innerHTML = '';
+            let allItems = [...DB.items, ...(DB.secretItems || [])];
+            let unlockedCount = 0;
+
+            const rarityOrder = ['common','uncommon','rare','epic','legendary','mythic','secret'];
+
+            let rarityFilterVal = document.getElementById('coll-rarity-filter') ? document.getElementById('coll-rarity-filter').value : 'all';
+            let sortVal = document.getElementById('coll-sort') ? document.getElementById('coll-sort').value : 'default';
+
+            // Count unlocked before filtering
+            allItems.forEach(i => { if(game.collection.includes(i.id)) unlockedCount++; });
+
+            // Apply filter
+            let filtered = allItems.filter(i => {
+                let unlocked = game.collection.includes(i.id);
+                if(collFilter === 'unlocked' && !unlocked) return false;
+                if(collFilter === 'locked' && unlocked) return false;
+                // Rarity filter
+                if(rarityFilterVal !== 'all') {
+                    let rid = getItemRarityId(i);
+                    if(rid !== rarityFilterVal) return false;
+                }
+                return true;
+            });
+
+            // Sort
+            if(sortVal === 'rarity-asc') {
+                filtered.sort((a,b) => rarityOrder.indexOf(getItemRarityId(a)) - rarityOrder.indexOf(getItemRarityId(b)));
+            } else if(sortVal === 'rarity-desc') {
+                filtered.sort((a,b) => rarityOrder.indexOf(getItemRarityId(b)) - rarityOrder.indexOf(getItemRarityId(a)));
+            } else if(sortVal === 'name') {
+                filtered.sort((a,b) => a.name.localeCompare(b.name));
+            }
+
+            filtered.forEach(i => {
+                let unlocked = game.collection.includes(i.id);
+                let isSecret = DB.secretItems && DB.secretItems.find(x => x.id === i.id);
+                let rid = isSecret ? 'secret' : (unlocked ? getItemRarityId(i) : 'common');
+                let rInfo = DB.rarities.find(r => r.id === rid) || DB.rarities[0];
+                let color = unlocked ? rInfo.color : '#666';
+                let rarityLabel = unlocked ? `<div style="font-size:10px; color:${color}; margin-top:2px;">${rInfo.name}</div>` : '';
+
+                c.innerHTML += `
+                <div class="inv-item ${unlocked?'':'silhouette'}" style="--item-color:${color}" title="${unlocked ? i.name + ' · ' + rInfo.name : '???'}">
+                    <div style="font-size:30px;">${unlocked ? i.icon : '❓'}</div>
+                    <div style="font-size:11px; margin:4px 0; color:${color}">${unlocked ? i.name : '???'}</div>
+                    ${rarityLabel}
+                </div>`;
+            });
+
+            document.getElementById('coll-count').innerText = unlockedCount;
+            document.getElementById('coll-total').innerText = allItems.length;
+            document.getElementById('coll-pct').innerText = ((unlockedCount / allItems.length) * 100).toFixed(1) + '%';
+        }
+
+        function renderProps() {
+            let c = document.getElementById('grid-prop');
+            c.innerHTML = '';
+            DB.properties.forEach(p => {
+                let locked = (p.reqPrestige || 0) > game.prestige;
+                if(locked) {
+                    c.innerHTML += `<div class="card locked" style="align-items:center; justify-content:center;"><div style="font-size:40px;">🔒</div><h3>Prestigio ${p.reqPrestige}</h3></div>`;
+                    return;
+                }
+                let owned = game.props[p.id];
+                let html = `
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">${p.icon}</div>
+                        <div class="card-info">
+                            <h3>${p.name}</h3>
+                            <div class="card-stats">Ingreso: +${formatMoney(p.inc)}/s</div>
+                        </div>
+                    </div>
+                    <button class="btn ${owned?'':'btn-buy'}" ${owned?'disabled':''} onclick="buyProp('${p.id}')">
+                        ${owned ? 'Comprado' : formatMoney(p.cost)}
+                    </button>
+                </div>`;
+                c.innerHTML += html;
+            });
+        }
+
+        function renderVehs() {
+            let c = document.getElementById('grid-veh');
+            c.innerHTML = '';
+            DB.vehicles.forEach(v => {
+                let owned = game.vehs[v.id];
+                let html = `
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-icon">${v.icon}</div>
+                        <div class="card-info">
+                            <h3>${v.name}</h3>
+                            <div class="card-stats">Multiplicador: +${(v.mult*100).toFixed(0)}%</div>
+                        </div>
+                    </div>
+                    <button class="btn ${owned?'':'btn-buy'}" ${owned?'disabled':''} onclick="buyVeh('${v.id}')">
+                        ${owned ? 'Comprado' : formatMoney(v.cost)}
+                    </button>
+                </div>`;
+                c.innerHTML += html;
+            });
+        }
+
+        function buildQuestUI(arr) {
+            let str = `<div class="grid">`;
+            arr.forEach(q => {
+                let pct = Math.min(100, (q.prog / q.target) * 100);
+                str += `
+                <div class="card" style="${q.done?'opacity:0.5':''}">
+                    <h3>${q.text}</h3>
+                    <p style="font-size:12px; color:var(--text-sec); margin:10px 0;">Recompensa: ${formatMoney(q.reward)}</p>
+                    <div class="progress-container">
+                        <div class="progress-bar" style="width:${pct}%"></div>
+                    </div>
+                    <div style="font-size:11px; text-align:right; margin-top:5px;">${q.prog}/${q.target}</div>
+                </div>`;
+            });
+            str += `</div>`;
+            return str;
+        }
+
+        function renderQuests() {
+            let c = document.getElementById('quests-container');
+            if(!c) return;
+            
+            generateQuests(); // ensure valid state
+
+            let now = Date.now();
+            let dLeft = game.quests.reset.daily - now;
+            let wLeft = game.quests.reset.weekly - now;
+            let mLeft = game.quests.reset.monthly - now;
+
+            c.innerHTML = `
+                <div class="quest-category">
+                    <h3>Misiones Diarias <span style="font-size:12px; float:right; color:var(--text-sec)">Reset: ${formatTime(dLeft/1000)}</span></h3>
+                    ${buildQuestUI(game.quests.daily)}
+                </div>
+                <div class="quest-category">
+                    <h3>Misiones Semanales <span style="font-size:12px; float:right; color:var(--text-sec)">Reset: ${formatTime(wLeft/1000)}</span></h3>
+                    ${buildQuestUI(game.quests.weekly)}
+                </div>
+                <div class="quest-category">
+                    <h3>Misiones Mensuales <span style="font-size:12px; float:right; color:var(--text-sec)">Reset: ${formatTime(mLeft/1000)}</span></h3>
+                    ${buildQuestUI(game.quests.monthly)}
+                </div>
+            `;
+        }
+
+        function renderAchievs() {
+            let c = document.getElementById('grid-achiev');
+            c.innerHTML = '';
+            let unlocked = 0;
+            DB.achievements.forEach(a => {
+                let done = game.achievs[a.id];
+                if(done) unlocked++;
+                let html = `
+                <div class="card" style="${done?'border-color:var(--accent); background:var(--bg-hover)':'opacity:0.6'}">
+                    <h3 style="color:${done?'var(--accent)':'var(--text-main)'}">${a.name}</h3>
+                    <p style="font-size:12px; margin-top:5px;">${a.desc}</p>
+                    ${done?'<div style="position:absolute; top:10px; right:10px;">✅</div>':''}
+                </div>`;
+                c.innerHTML += html;
+            });
+            
+            // Secret Achievements
+            DB.secretAchievements.forEach(a => {
+                let done = game.secretAchievs[a.id];
+                if(done) {
+                    unlocked++;
+                    let html = `
+                    <div class="card" style="border-color:var(--rarity-secret); box-shadow: 0 0 10px rgba(255,0,255,0.2);">
+                        <h3 style="color:var(--rarity-secret)">👁️ ${a.name}</h3>
+                        <p style="font-size:12px; margin-top:5px;">${a.desc}</p>
+                        <div style="position:absolute; top:10px; right:10px;">✅</div>
+                    </div>`;
+                    c.innerHTML += html;
+                }
+            });
+
+            document.getElementById('achiev-count').innerText = unlocked;
+        }
+
+        function renderPrestige() {
+            document.getElementById('prest-current').innerText = 'x' + (1+game.prestigeMult).toFixed(2);
+            document.getElementById('prest-gain').innerText = '+' + calcPrestigeGain().toFixed(2);
+        }
+
+        function renderStats() {
+            document.getElementById('stat-time').innerText = formatTime(game.stats.timePlayed);
+            document.getElementById('stat-earned').innerText = formatMoney(game.totalEarned);
+            document.getElementById('stat-spent').innerText = formatMoney(game.stats.totalSpent);
+            document.getElementById('stat-best-box').innerText = formatMoney(game.stats.bestItemVal);
+            document.getElementById('stat-max-gps').innerText = formatMoney(game.stats.maxGps);
+            document.getElementById('stat-prestiges').innerText = game.prestige;
+            document.getElementById('stat-invests').innerText = game.stats.investsMade || 0;
+            document.getElementById('stat-casino').innerText = formatMoney(game.stats.casinoWon || 0);
+            document.getElementById('stat-offline').innerText = formatMoney(game.stats.offlineGains);
+            document.getElementById('stat-plants').innerText = game.stats.plantsHarvested || 0;
+            document.getElementById('stat-simcoins').innerText = (game.stats.simCoinsMined || 0).toFixed(4) + ' SC';
+        }
+
+        function updateUI_Full() {
+            updateTopBar();
+            renderJobs();
+            renderActivities();
+            renderPlants();
+            renderCrypto();
+            renderBiz();
+            renderStocks();
+            renderInvests();
+            renderCases();
+            renderInv();
+            renderMarket();
+            renderCollection();
+            renderProps();
+            renderVehs();
+            renderBankUI();
+            renderQuests();
+            renderAchievs();
+            renderStats();
+            renderPrestige();
+        }
+
+        // --- GAME LOOP ---
+        function gameLoop(time) {
+            let dt = (time - lastTick) / 1000;
+            lastTick = time;
+
+            game.stats.timePlayed += dt;
+
+            // GPS
+            let gps = getGPS();
+            if(gps > 0) {
+                addMoney(gps * dt);
+                if(gps > game.stats.maxGps) game.stats.maxGps = gps;
+            }
+
+            // Crypto Mining (1 Hash = 0.01 SC per sec)
+            let hash = getCryptoHashrate();
+            if(hash > 0) {
+                let mined = hash * 0.01 * dt;
+                game.crypto.simCoin += mined;
+                game.stats.simCoinsMined += mined;
+                checkAchievements('crypto', game.stats.simCoinsMined);
+                if(document.getElementById('tab-crypto').classList.contains('active')) {
+                    document.getElementById('crypto-balance').innerText = game.crypto.simCoin.toFixed(4) + ' SC';
+                }
+            }
+
+            // UI Refresh Fast
+            updateTopBar();
+
+            // Bank Interest Timer
+            timers.bank += dt;
+            if(timers.bank >= 60) {
+                let interest = game.bank.balance * 0.01;
+                if(interest > 0) {
+                    game.bank.balance += interest;
+                    if(document.getElementById('tab-bank').classList.contains('active')) updateBankUI();
+                }
+                timers.bank = 0;
+            }
+
+            // Events Timer
+            timers.events += dt;
+            if(timers.events >= 120) {
+                timers.events = 0;
+                if(Math.random() < 0.05) triggerRandomEvent(); // 5% chance every 2 mins
+            }
+
+            // Crypto Market Timer
+            timers.cryptoMarket += dt;
+            if(timers.cryptoMarket >= 10) {
+                timers.cryptoMarket = 0;
+                updateCryptoMarket();
+            }
+
+            // Stats UI Timer
+            timers.ui += dt;
+            if(timers.ui >= 1) {
+                timers.ui = 0;
+                if(document.getElementById('tab-stats').classList.contains('active')) renderStats();
+                if(document.getElementById('tab-plants').classList.contains('active')) renderPlants();
+                if(document.getElementById('tab-quests').classList.contains('active')) renderQuests();
+            }
+
+            // Job Progress
+            if(game.job.isWorking) {
+                let dur = getJobDuration();
+                let elapsed = Date.now() - game.job.workStart;
+                let pct = Math.min(100, (elapsed / dur) * 100);
+                let pBar = document.getElementById('job-prog');
+                if(pBar) pBar.style.width = pct + '%';
+
+                if(elapsed >= dur) {
+                    game.job.isWorking = false;
+                    let sal = getJobSalary();
+                    addMoney(sal);
+                    game.job.xp++;
+                    checkJobLevelUp();
+                    renderJobs();
+                    updateQuests('click');
+                    updateTopBar();
+
+                    let nav = document.querySelector('[data-tab="tab-jobs"]');
+                    if(nav) {
+                        let rect = nav.getBoundingClientRect();
+                        showFloatText(`+${formatMoney(sal)}`, rect.left + 20, rect.bottom + 20);
+                    }
+
+                    // Re-enable work button if it's visible
+                    let workBtn = document.querySelector('#grid-jobs .btn-action');
+                    if(workBtn) workBtn.disabled = false;
+                }
+            }
+
+            // Activities Progress
+            DB.activities.forEach(act => {
+                let st = game.activities[act.id];
+                if(st && st.isWorking) {
+                    let dur = act.baseDuration * Math.pow(0.95, st.level);
+                    let elapsed = Date.now() - st.workStart;
+                    let el = document.getElementById('prog-' + act.id);
+                    if(el) el.style.width = Math.min(100, (elapsed/dur)*100) + '%';
+                    
+                    if(elapsed >= dur) {
+                        st.isWorking = false;
+                        let rew = act.baseReward * Math.pow(1.5, st.level) * getGlobalMult();
+                        addMoney(rew);
+                        st.xp++; 
+                        renderActivities();
+                    }
+                }
+            });
+
+            loopId = requestAnimationFrame(gameLoop);
+        }
+
+        // --- TRADING SYSTEM (Firebase Realtime Database) ---
+        const FIREBASE_URL = 'https://money-simulator-25f8a-default-rtdb.europe-west1.firebasedatabase.app';
+        const IS_LOCAL = location.protocol === 'file:';
+
+        async function fbGet(path) {
+            if(IS_LOCAL) {
+                try { return JSON.parse(localStorage.getItem('fb_' + path) || 'null'); } catch(e) { return null; }
+            }
+            try {
+                let r = await fetch(FIREBASE_URL + path + '.json');
+                if(!r.ok) return null;
+                return await r.json();
+            } catch(e) { return null; }
+        }
+        async function fbSet(path, data) {
+            if(IS_LOCAL) {
+                localStorage.setItem('fb_' + path, JSON.stringify(data));
+                return true;
+            }
+            try {
+                let r = await fetch(FIREBASE_URL + path + '.json', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                return r.ok;
+            } catch(e) { return false; }
+        }
+        async function fbPush(path, data) {
+            if(IS_LOCAL) {
+                let existing = {};
+                try { existing = JSON.parse(localStorage.getItem('fb_' + path) || '{}'); } catch(e) {}
+                let key = 'k' + Date.now() + Math.random().toString(36).slice(2,6);
+                existing[key] = data;
+                localStorage.setItem('fb_' + path, JSON.stringify(existing));
+                return true;
+            }
+            try {
+                let r = await fetch(FIREBASE_URL + path + '.json', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                return r.ok;
+            } catch(e) { return false; }
+        }
+        async function fbDelete(path) {
+            if(IS_LOCAL) {
+                // Delete a specific key: path is like /trades/CODE/key
+                let parts = path.split('/').filter(Boolean);
+                if(parts.length >= 3) {
+                    let parentPath = '/' + parts.slice(0,-1).join('/');
+                    let key = parts[parts.length-1];
+                    let existing = {};
+                    try { existing = JSON.parse(localStorage.getItem('fb_' + parentPath) || '{}'); } catch(e) {}
+                    delete existing[key];
+                    localStorage.setItem('fb_' + parentPath, JSON.stringify(existing));
+                } else {
+                    localStorage.removeItem('fb_' + path);
+                }
+                return;
+            }
+            try {
+                await fetch(FIREBASE_URL + path + '.json', { method: 'DELETE' });
+            } catch(e) {}
+        }
+
+        function getMyTradeCode() {
+            if(!game.tradeCode) {
+                game.tradeCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+                saveGame();
+            }
+            return game.tradeCode;
+        }
+
+        function copyTradeCode() {
+            let code = getMyTradeCode();
+            if(navigator.clipboard) {
+                navigator.clipboard.writeText(code).then(() => showNotification('Código copiado: ' + code)).catch(() => showNotification('Tu código: ' + code));
+            } else {
+                showNotification('Tu código: ' + code);
+            }
+        }
+
+        function renderTradeTab() {
+            document.getElementById('my-trade-code').innerText = getMyTradeCode();
+            // Show local mode warning
+            let banner = document.getElementById('trade-local-banner');
+            if(banner) banner.style.display = IS_LOCAL ? 'block' : 'none';
+            uploadMyInventory();
+            checkIncomingTrades();
+        }
+
+        async function uploadMyInventory() {
+            let invData = game.inv.map(i => {
+                let iInfo = getItemInfo(i.id); let rInfo = getRarityInfo(i.rarityId);
+                return { uid: i.uid, id: i.id, rarityId: i.rarityId, val: i.val,
+                    name: iInfo ? iInfo.name : '???', icon: iInfo ? iInfo.icon : '📦',
+                    rarityName: rInfo ? rInfo.name : '?', rarityColor: rInfo ? rInfo.color : '#fff' };
+            });
+            await fbSet('/inventories/' + getMyTradeCode(), { items: invData, ts: Date.now() });
+        }
+
+        async function browsePlayerInventory() {
+            let targetCode = (document.getElementById('trade-browse-code').value || '').trim().toUpperCase();
+            let resEl = document.getElementById('trade-browse-result');
+            let invDiv = document.getElementById('trade-browse-inv');
+            if(!targetCode || targetCode.length < 4) { resEl.innerText = '❌ Código inválido.'; resEl.style.color='var(--neg)'; return; }
+            if(targetCode === getMyTradeCode()) { resEl.innerText = '❌ No puedes verte a ti mismo.'; resEl.style.color='var(--neg)'; return; }
+            resEl.innerText = '⏳ Cargando inventario...'; resEl.style.color='var(--text-sec)';
+            invDiv.style.display = 'none';
+            let data = await fbGet('/inventories/' + targetCode);
+            if(!data || !data.items || data.items.length === 0) {
+                resEl.innerText = '❌ Jugador no encontrado o sin inventario. Dile que abra la pestaña Trading primero.';
+                resEl.style.color = 'var(--neg)'; return;
+            }
+            resEl.innerText = '✅ Inventario de ' + targetCode + ' (' + data.items.length + ' objetos).';
+            resEl.style.color = 'var(--pos)';
+            let theirSel = document.getElementById('trade-their-item');
+            theirSel.innerHTML = '<option value="">-- Su objeto que quieres --</option>';
+            [...data.items].sort((a,b) => b.val - a.val).forEach(i => {
+                let safeObj = encodeURIComponent(JSON.stringify(i));
+                theirSel.innerHTML += `<option value="${i.uid}" data-obj="${safeObj}">[${i.rarityName}] ${i.icon} ${i.name} — ${formatMoney(i.val)}</option>`;
+            });
+            let mySel = document.getElementById('trade-my-offer');
+            mySel.innerHTML = '<option value="">-- Tu objeto que ofreces --</option>';
+            [...game.inv].sort((a,b) => b.val - a.val).forEach(i => {
+                let iInfo = getItemInfo(i.id); let rInfo = getRarityInfo(i.rarityId);
+                if(iInfo && rInfo) mySel.innerHTML += `<option value="${i.uid}">[${rInfo.name}] ${iInfo.icon} ${iInfo.name} — ${formatMoney(i.val)}</option>`;
+            });
+            invDiv.style.display = 'block';
+            invDiv.dataset.targetCode = targetCode;
+        }
+
+        async function proposeTrade() {
+            let targetCode = (document.getElementById('trade-browse-inv').dataset.targetCode || '').trim();
+            let theirSel = document.getElementById('trade-their-item');
+            let myUid = parseInt(document.getElementById('trade-my-offer').value);
+            let resEl = document.getElementById('trade-item-result');
+            if(!targetCode) { resEl.innerText = '❌ Primero busca el inventario.'; resEl.style.color='var(--neg)'; return; }
+            if(!theirSel.value) { resEl.innerText = '❌ Selecciona su objeto.'; resEl.style.color='var(--neg)'; return; }
+            if(isNaN(myUid)) { resEl.innerText = '❌ Selecciona tu objeto.'; resEl.style.color='var(--neg)'; return; }
+            let myItemIdx = game.inv.findIndex(i => i.uid === myUid);
+            if(myItemIdx === -1) { resEl.innerText = '❌ Tu objeto no encontrado.'; resEl.style.color='var(--neg)'; return; }
+            let myItem = game.inv[myItemIdx];
+            let myIInfo = getItemInfo(myItem.id); let myRInfo = getRarityInfo(myItem.rarityId);
+            let theirObj = {};
+            try { theirObj = JSON.parse(decodeURIComponent(theirSel.options[theirSel.selectedIndex].dataset.obj || '{}')); } catch(e) {}
+            resEl.innerText = '⏳ Enviando propuesta...'; resEl.style.color='var(--text-sec)';
+            let ok = await fbPush('/trades/' + targetCode, {
+                type: 'item_swap', from: getMyTradeCode(),
+                offeredItem: { uid: myItem.uid, id: myItem.id, rarityId: myItem.rarityId, val: myItem.val,
+                    name: myIInfo ? myIInfo.name : '???', icon: myIInfo ? myIInfo.icon : '📦',
+                    rarityName: myRInfo ? myRInfo.name : '?', rarityColor: myRInfo ? myRInfo.color : '#fff' },
+                wantedItem: theirObj, ts: Date.now()
+            });
+            if(ok) {
+                resEl.innerText = `✅ Propuesta enviada: tu ${myIInfo ? myIInfo.name : '???'} por su ${theirObj.name || '???'}.`;
+                resEl.style.color = 'var(--pos)';
+            } else { resEl.innerText = '❌ Error de conexión.'; resEl.style.color = 'var(--neg)'; }
+        }
+
+        async function sendMoney() {
+            let targetCode = (document.getElementById('trade-target-code').value || '').trim().toUpperCase();
+            let amount = parseFloat(document.getElementById('trade-money-amount').value);
+            let resEl = document.getElementById('send-money-result');
+            if(!targetCode || targetCode.length < 4) { resEl.innerText = '❌ Código inválido.'; resEl.style.color='var(--neg)'; return; }
+            if(targetCode === getMyTradeCode()) { resEl.innerText = '❌ No puedes enviarte dinero a ti mismo.'; resEl.style.color='var(--neg)'; return; }
+            if(isNaN(amount) || amount <= 0) { resEl.innerText = '❌ Cantidad inválida.'; resEl.style.color='var(--neg)'; return; }
+            if(amount > game.money) { resEl.innerText = '❌ No tienes suficiente dinero.'; resEl.style.color='var(--neg)'; return; }
+            resEl.innerText = '⏳ Enviando...'; resEl.style.color = 'var(--text-sec)';
+            let ok = await fbPush('/trades/' + targetCode, { type: 'money', from: getMyTradeCode(), amount: amount, ts: Date.now() });
+            if(ok) {
+                addMoney(-amount); updateTopBar(); saveGame();
+                resEl.innerText = '✅ Enviados ' + formatMoney(amount) + ' al jugador ' + targetCode + '.';
+                resEl.style.color = 'var(--pos)';
+                document.getElementById('trade-money-amount').value = '';
+            } else { resEl.innerText = '❌ Error de conexión.'; resEl.style.color = 'var(--neg)'; }
+        }
+
+        let pendingTradesMap = {};
+
+        async function checkIncomingTrades() {
+            let container = document.getElementById('incoming-trades-list');
+            if(!container) return;
+            container.innerHTML = '<p style="color:var(--text-sec); font-size:13px;">⏳ Comprobando...</p>';
+            let data = await fbGet('/trades/' + getMyTradeCode());
+            pendingTradesMap = {};
+            if(!data || Object.keys(data).length === 0) {
+                container.innerHTML = '<p style="color:var(--text-sec); font-size:13px;">No hay trades pendientes.</p>';
+                return;
+            }
+            container.innerHTML = '';
+            Object.entries(data).forEach(([key, t]) => {
+                pendingTradesMap[key] = t;
+                let date = new Date(t.ts).toLocaleTimeString();
+                if(t.type === 'money') {
+                    container.innerHTML += `<div style="background:var(--bg-main); padding:12px; border-radius:8px; margin-bottom:8px; border:1px solid var(--pos);">
+                        <div style="font-weight:bold; color:var(--pos);">💸 +${formatMoney(t.amount)}</div>
+                        <div style="font-size:12px; color:var(--text-sec); margin-top:4px;">De: <strong>${t.from}</strong> · ${date}</div>
+                        <button class="btn btn-success" style="margin-top:8px; width:auto; padding:5px 15px;" onclick="acceptTrade('${key}')">✅ Aceptar</button>
+                    </div>`;
+                } else if(t.type === 'item_swap') {
+                    let off = t.offeredItem || {}; let want = t.wantedItem || {};
+                    container.innerHTML += `<div style="background:var(--bg-main); padding:12px; border-radius:8px; margin-bottom:8px; border:1px solid ${off.rarityColor || '#aaa'};">
+                        <div style="font-weight:bold; margin-bottom:6px;">🤝 Propuesta de <strong>${t.from}</strong></div>
+                        <div style="font-size:13px; margin-bottom:3px;">Te ofrecen: <span style="color:${off.rarityColor || '#fff'}">${off.icon || '📦'} ${off.name || '???'} [${off.rarityName || '?'}]</span></div>
+                        <div style="font-size:13px;">A cambio de tu: <span style="color:${want.rarityColor || '#fff'}">${want.icon || '📦'} ${want.name || '???'} [${want.rarityName || '?'}]</span></div>
+                        <div style="font-size:12px; color:var(--text-sec); margin-top:4px;">${date}</div>
+                        <div style="display:flex; gap:8px; margin-top:8px;">
+                            <button class="btn btn-success" style="width:auto; padding:5px 15px;" onclick="acceptTrade('${key}')">✅ Aceptar</button>
+                            <button class="btn btn-danger" style="width:auto; padding:5px 15px;" onclick="rejectTrade('${key}')">❌ Rechazar</button>
+                        </div>
+                    </div>`;
+                }
+            });
+        }
+
+        async function acceptTrade(key) {
+            let t = pendingTradesMap[key];
+            if(!t) { showNotification('❌ Actualiza la bandeja.'); return; }
+            await fbDelete('/trades/' + getMyTradeCode() + '/' + key);
+            delete pendingTradesMap[key];
+            if(t.type === 'money') {
+                addMoney(t.amount); updateTopBar();
+                showNotification('💸 +' + formatMoney(t.amount) + ' recibidos de ' + t.from);
+            } else if(t.type === 'item_swap') {
+                let off = t.offeredItem || {}; let want = t.wantedItem || {};
+                // Remove the wanted item from my inventory
+                let wantIdx = game.inv.findIndex(i => i.uid === want.uid);
+                if(wantIdx !== -1) game.inv.splice(wantIdx, 1);
+                // Add the offered item
+                game.inv.push({ uid: ++uidCounter, id: off.id, rarityId: off.rarityId, val: off.val });
+                addToCollection(off.id);
+                // Send the wanted item to the proposer as a completed delivery
+                await fbPush('/trades/' + t.from, {
+                    type: 'item_delivered', from: getMyTradeCode(),
+                    item: { uid: ++uidCounter, id: want.id, rarityId: want.rarityId, val: want.val,
+                        name: want.name, icon: want.icon, rarityName: want.rarityName, rarityColor: want.rarityColor },
+                    ts: Date.now()
+                });
+                renderInv(); uploadMyInventory();
+                showNotification('🔄 ¡Intercambio aceptado! Recibiste ' + (off.name || '???'));
+            } else if(t.type === 'item_delivered') {
+                let item = t.item || {};
+                game.inv.push({ uid: ++uidCounter, id: item.id, rarityId: item.rarityId, val: item.val });
+                addToCollection(item.id);
+                renderInv(); uploadMyInventory();
+                showNotification('📦 Trade completado! Recibiste ' + (item.name || '???'));
+            }
+            saveGame(); checkIncomingTrades();
+        }
+
+        async function rejectTrade(key) {
+            await fbDelete('/trades/' + getMyTradeCode() + '/' + key);
+            delete pendingTradesMap[key];
+            showNotification('Trade rechazado.');
+            checkIncomingTrades();
+        }
+
+        // --- Global Timers
+        setInterval(saveGame, 10000); 
+        setInterval(updateStocks, 5000); 
+        setInterval(updateInvestments, 15000);
+        
+        // --- TABS LOGIC ---
+        document.querySelectorAll('.nav-item').forEach(el => {
+            el.addEventListener('click', (e) => {
+                document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                
+                el.classList.add('active');
+                let target = el.getAttribute('data-tab');
+                document.getElementById(target).classList.add('active');
+                
+                if(target === 'tab-prestige') renderPrestige();
+                if(target === 'tab-stats') renderStats();
+                if(target === 'tab-collection') renderCollection();
+                if(target === 'tab-plants') renderPlants();
+                if(target === 'tab-crypto') renderCrypto();
+                if(target === 'tab-quests') renderQuests();
+                if(target === 'tab-trade') renderTradeTab();
+            });
+        });
+
+        // --- INIT ---
+        window.onload = () => {
+            loadGame();
+            lastTick = performance.now();
+            loopId = requestAnimationFrame(gameLoop);
+        };
+
+    </script>
+</body>
+</html>
