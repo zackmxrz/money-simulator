@@ -735,15 +735,45 @@
 
         <!-- PRESTIGIO -->
         <div id="tab-prestige" class="tab-content">
-            <div class="tab-header"><h2>Prestigio Avanzado</h2></div>
-            <div class="card" style="text-align:center;">
-                <div style="font-size:60px; margin-bottom:10px;">⭐</div>
-                <h3>Ascender a una nueva vida</h3>
-                <p style="margin:15px 0;">Reiniciarás tu dinero, trabajos, negocios, plantas, cripto, bolsa y propiedades. Mantendrás estadísticas, logros, vehículos, colección y objetos secretos. El banco será vaciado pero ganarás intereses más fuertes si vuelves a depositar.</p>
-                <p>Nuevos niveles de Prestigio desbloquean negocios, propiedades y cajas ultra raras.</p>
-                <p style="margin-top:15px;">Multiplicador Actual por Prestigio: <strong id="prest-current" style="color:var(--accent);">x1.00</strong></p>
-                <p>Ganarás: <strong id="prest-gain" style="color:var(--pos);">+0.00</strong> a tu multiplicador permanente basado en el dinero total ganado.</p>
-                <button class="btn btn-action" style="margin-top:20px; font-size:18px;" onclick="doPrestige()">Hacer Prestigio</button>
+            <div class="tab-header"><h2>⭐ Prestigio — Rebirth</h2></div>
+            <div class="card" style="text-align:center; max-width:620px; margin:0 auto;">
+                <div style="font-size:56px; margin-bottom:6px;">⭐</div>
+                <h3 id="prest-title">Rebirth 1</h3>
+                <p style="margin:10px 0; color:var(--text-sec); font-size:13px;">Acumula suficiente dinero y renace con un multiplicador permanente mayor. Mantendrás colección, logros, vehículos y objetos.</p>
+
+                <!-- Progress bar -->
+                <div style="margin:20px 0;">
+                    <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-sec); margin-bottom:6px;">
+                        <span>Tu dinero actual</span>
+                        <span id="prest-money-label">$0 / $1M</span>
+                    </div>
+                    <div style="background:var(--bg-main); border-radius:20px; height:18px; overflow:hidden;">
+                        <div id="prest-progress-bar" style="height:100%; width:0%; background:linear-gradient(90deg, var(--accent), var(--pos)); border-radius:20px; transition:width 0.5s;"></div>
+                    </div>
+                    <div id="prest-pct-label" style="font-size:12px; color:var(--text-sec); margin-top:4px;">0%</div>
+                </div>
+
+                <!-- Stats -->
+                <div style="background:var(--bg-main); border-radius:12px; padding:16px; margin-bottom:16px; text-align:left;">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <span style="color:var(--text-sec);">Multiplicador actual:</span>
+                        <strong id="prest-current" style="color:var(--accent);">x1.00</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <span style="color:var(--text-sec);">Ganarás al ascender:</span>
+                        <strong id="prest-gain" style="color:var(--pos);">+0.10</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                        <span style="color:var(--text-sec);">Nivel de Prestigio:</span>
+                        <strong id="prest-level" style="color:var(--accent);">0</strong>
+                    </div>
+                    <hr style="border-color:var(--border); margin:10px 0;">
+                    <div style="font-size:12px; color:var(--text-sec); margin-bottom:6px;">Próximos rebirths:</div>
+                    <div id="prest-next-list" style="font-size:12px; line-height:2;"></div>
+                </div>
+
+                <div id="prest-status" style="margin-bottom:14px; font-size:14px; font-weight:bold;"></div>
+                <button id="prest-btn" class="btn btn-action" style="font-size:18px; width:100%; opacity:0.4; cursor:not-allowed;" onclick="doPrestige()" disabled>⭐ Ascender</button>
             </div>
         </div>
 
@@ -751,9 +781,9 @@
         <div id="tab-trade" class="tab-content">
             <div class="tab-header"><h2>🔄 Trading entre Jugadores</h2></div>
             <div id="trade-local-banner" style="display:none; background:#3a2000; border:1px solid #f90; border-radius:8px; padding:12px 16px; margin-bottom:16px; font-size:13px; color:#f90;">
-                ⚠️ <strong>Modo local (archivo)</strong> — El trading entre diferentes jugadores solo funciona cuando el juego está publicado en <strong>GitHub Pages</strong>. En local, el inventario se guarda en este navegador y solo puedes probarlo contigo mismo en la misma pestaña.
+                ⚠️ <strong>Modo local (archivo)</strong> — El trading entre diferentes jugadores solo funciona cuando el juego está publicado en <strong>GitHub Pages</strong>. En local puedes probarlo en la misma pestaña.
             </div>
-            <div class="grid" style="max-width:900px;">
+            <div class="grid" style="max-width:960px;">
                 <div class="card">
                     <h3>Tu Código de Jugador</h3>
                     <p style="color:var(--text-sec); font-size:12px; margin-bottom:10px;">Comparte este código para que otros puedan enviarte trades o dinero.</p>
@@ -768,29 +798,48 @@
                     <button class="btn btn-action" onclick="sendMoney()">Enviar Dinero</button>
                     <div id="send-money-result" style="margin-top:10px; font-size:13px;"></div>
                 </div>
+
+                <!-- MULTI-ITEM TRADE (Adopt Me style) -->
                 <div class="card" style="grid-column: 1 / -1;">
-                    <h3>🔍 Ver Inventario de otro Jugador y Proponer Trade</h3>
-                    <p style="color:var(--text-sec); font-size:12px; margin-bottom:10px;">Introduce el código del jugador para ver su inventario y proponerle un intercambio de objetos.</p>
-                    <div style="display:flex; gap:10px; margin-bottom:10px;">
+                    <h3>🤝 Proponer Intercambio de Objetos</h3>
+                    <p style="color:var(--text-sec); font-size:12px; margin-bottom:12px;">Introduce el código del jugador, ve su inventario y construye una oferta con varios objetos a la vez.</p>
+                    <div style="display:flex; gap:10px; margin-bottom:12px;">
                         <input type="text" id="trade-browse-code" class="casino-input" placeholder="Código del jugador" style="flex:1;" maxlength="6">
                         <button class="btn btn-action" onclick="browsePlayerInventory()">🔎 Ver inventario</button>
                     </div>
-                    <div id="trade-browse-result" style="font-size:13px; margin-bottom:10px;"></div>
+                    <div id="trade-browse-result" style="font-size:13px; margin-bottom:12px;"></div>
+
                     <div id="trade-browse-inv" style="display:none;">
-                        <div style="display:flex; gap:10px; flex-wrap:wrap; margin-bottom:12px;">
-                            <div style="flex:1; min-width:200px;">
-                                <p style="font-size:12px; color:var(--text-sec); margin-bottom:6px;">Su objeto (que tú quieres):</p>
-                                <select id="trade-their-item" class="casino-input" style="width:100%;"></select>
+                        <!-- Two columns: their side / my side -->
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+                            <!-- THEIR SIDE -->
+                            <div style="background:var(--bg-main); border-radius:10px; padding:14px;">
+                                <div style="font-weight:bold; margin-bottom:8px; color:var(--accent);">🎒 Su inventario</div>
+                                <select id="trade-their-picker" class="casino-input" style="width:100%; margin-bottom:8px;"></select>
+                                <button class="btn btn-buy" style="width:100%; padding:6px;" onclick="addTheirItem()">➕ Añadir a la oferta</button>
+                                <div style="margin-top:12px; font-size:12px; color:var(--text-sec); margin-bottom:6px;">Ellos ponen (tú recibirás):</div>
+                                <div id="trade-their-basket" style="min-height:48px; background:var(--bg-card); border-radius:8px; padding:8px; display:flex; flex-wrap:wrap; gap:6px;">
+                                    <span id="their-empty" style="color:var(--text-sec); font-size:12px;">Nada aún</span>
+                                </div>
+                                <div style="margin-top:6px; font-size:12px; color:var(--text-sec);">Valor total: <strong id="their-basket-val" style="color:var(--pos);">$0</strong></div>
                             </div>
-                            <div style="flex:1; min-width:200px;">
-                                <p style="font-size:12px; color:var(--text-sec); margin-bottom:6px;">Tu objeto (que ofreces):</p>
-                                <select id="trade-my-offer" class="casino-input" style="width:100%;"></select>
+                            <!-- MY SIDE -->
+                            <div style="background:var(--bg-main); border-radius:10px; padding:14px;">
+                                <div style="font-weight:bold; margin-bottom:8px; color:var(--accent);">🎒 Tu inventario</div>
+                                <select id="trade-my-picker" class="casino-input" style="width:100%; margin-bottom:8px;"></select>
+                                <button class="btn btn-buy" style="width:100%; padding:6px;" onclick="addMyItem()">➕ Añadir a la oferta</button>
+                                <div style="margin-top:12px; font-size:12px; color:var(--text-sec); margin-bottom:6px;">Tú pones (ellos recibirán):</div>
+                                <div id="trade-my-basket" style="min-height:48px; background:var(--bg-card); border-radius:8px; padding:8px; display:flex; flex-wrap:wrap; gap:6px;">
+                                    <span id="my-empty" style="color:var(--text-sec); font-size:12px;">Nada aún</span>
+                                </div>
+                                <div style="margin-top:6px; font-size:12px; color:var(--text-sec);">Valor total: <strong id="my-basket-val" style="color:var(--neg);">$0</strong></div>
                             </div>
                         </div>
-                        <button class="btn btn-buy" onclick="proposeTrade()">🤝 Proponer Intercambio</button>
-                        <div id="trade-item-result" style="margin-top:10px; font-size:13px;"></div>
+                        <div id="trade-item-result" style="font-size:13px; margin-bottom:10px;"></div>
+                        <button class="btn btn-action" style="width:100%; font-size:16px;" onclick="proposeTrade()">🤝 Enviar Propuesta de Intercambio</button>
                     </div>
                 </div>
+
                 <div class="card" style="grid-column: 1 / -1;">
                     <h3>📬 Peticiones Recibidas</h3>
                     <p style="color:var(--text-sec); font-size:12px; margin-bottom:10px;">Dinero y propuestas de intercambio enviadas a tu código.</p>
@@ -1594,6 +1643,38 @@
                 game.stockPrices[s.id] = p;
             });
             if(document.getElementById('tab-stock').classList.contains('active')) renderStocks();
+            // After updating stocks, fluctuate item values based on economy
+            updateItemValues();
+        }
+
+        function updateItemValues() {
+            if(!game.inv || game.inv.length === 0) return;
+            // Calculate average stock market health (1.0 = neutral)
+            let totalRatio = 0; let count = 0;
+            DB.stocks.forEach(s => {
+                if(game.stockPrices[s.id]) { totalRatio += game.stockPrices[s.id] / s.basePrice; count++; }
+            });
+            let marketHealth = count > 0 ? totalRatio / count : 1;
+            // marketHealth > 1 = bull market, < 1 = bear market
+            game.inv.forEach(i => {
+                let rInfo = getRarityInfo(i.rarityId);
+                if(!rInfo) return;
+                // Higher rarity = more volatile (affected more by economy)
+                const rarityVol = { common: 0.002, uncommon: 0.004, rare: 0.007, epic: 0.012, legendary: 0.018, mythic: 0.025, secret: 0.035 };
+                let vol = rarityVol[i.rarityId] || 0.005;
+                // Market influence: bull market slightly increases value, bear decreases
+                let marketInfluence = (marketHealth - 1) * vol * 2;
+                // Random noise
+                let noise = (Math.random() * vol * 2) - vol;
+                let change = 1 + noise + marketInfluence;
+                // Clamp so value never drops below 10% or rises above 500% of original
+                let iInfo = getItemInfo(i.id);
+                if(iInfo) {
+                    let minVal = iInfo.baseVal * rInfo.valMult * 0.1;
+                    let maxVal = iInfo.baseVal * rInfo.valMult * 5;
+                    i.val = Math.min(maxVal, Math.max(minVal, i.val * change));
+                }
+            });
         }
         function buyStock(id) {
             let p = game.stockPrices[id];
@@ -2065,14 +2146,28 @@
         }
 
         // Prestige
-        function calcPrestigeGain() {
-            let gain = Math.pow(game.totalEarned / 1e6, 0.3) * 0.01; 
-            return isNaN(gain) ? 0 : Math.max(0, gain);
+        function getPrestigeRequirement() {
+            // Prestige 0→1: $1M, 1→2: $5M, 2→3: $25M, etc. x5 each time
+            return Math.pow(5, game.prestige) * 1e6;
         }
+
+        function calcPrestigeGain() {
+            // Bonus based on how much money you have above the requirement
+            let req = getPrestigeRequirement();
+            let excess = Math.max(0, game.money - req);
+            let base = 0.10 + (game.prestige * 0.02); // base gain grows each prestige
+            let bonus = Math.pow(excess / req, 0.4) * 0.05;
+            return Math.round((base + bonus) * 1000) / 1000;
+        }
+
         function doPrestige() {
+            let req = getPrestigeRequirement();
+            if(game.money < req) {
+                showNotification('Necesitas ' + formatMoney(req) + ' para ascender', 'error');
+                return;
+            }
             let gain = calcPrestigeGain();
-            if(gain < 0.01) return showNotification('No tienes suficientes ganancias para prestigiar', 'error');
-            if(confirm(`¿Ascender? Perderás progreso (excepto colección, vehículos y stats) pero ganarás +${(gain).toFixed(2)} multiplicador permanente y desbloquearás nuevo contenido.`)) {
+            if(confirm(`¿Ascender al Prestigio ${game.prestige + 1}?\n\nNecesitas: ${formatMoney(req)}\nTienes: ${formatMoney(game.money)}\n\nGanarás: +${gain.toFixed(3)} al multiplicador permanente.\n\nPerderás: dinero, trabajos, negocios, plantas, cripto, bolsa y propiedades.\nMantendrás: colección, logros, vehículos y objetos.`)) {
                 game.prestige++;
                 game.prestigeMult += gain;
                 game.money = 0;
@@ -2082,17 +2177,13 @@
                 game.investments = {};
                 game.props = {};
                 game.bank.balance = 0;
-                
                 game.plants = [];
                 for(let i=0; i<6; i++) game.plants.push({ seedId: null, plantedAt: 0 });
-                
                 game.crypto = { gpus: {}, simCoin: 0, coinPrice: 5000, trend: 1 };
                 DB.gpus.forEach(g => game.crypto.gpus[g.id] = 0);
-
                 DB.activities.forEach(a => game.activities[a.id] = { level: 0, xp: 0, isWorking: false, workStart: 0 });
                 DB.stocks.forEach(s => game.stockPrices[s.id] = s.basePrice);
                 DB.investments.forEach(i => game.investPrices[i.id] = i.basePrice);
-                
                 checkAchievements('prestige', game.prestige);
                 saveGame();
                 location.reload();
@@ -2142,6 +2233,7 @@
             document.getElementById('ui-gps').innerText = formatMoney(getGPS()) + '/s';
             document.getElementById('ui-mult').innerText = 'x' + getGlobalMult().toFixed(2);
             document.getElementById('ui-prestige').innerText = game.prestige;
+            if(document.getElementById('tab-prestige') && document.getElementById('tab-prestige').classList.contains('active')) renderPrestige();
         }
 
         function renderJobs() {
@@ -2452,67 +2544,79 @@
             renderCollection();
         }
 
+        // Precomputed lookup maps — rebuilt once per renderCollection call
+        let _collectionSet = null;
+        let _secretItemSet = null;
+        let _invRarityMap  = null; // itemId → rarityId (first found in inv)
+
+        function buildCollLookups() {
+            _collectionSet = new Set(game.collection);
+            _secretItemSet = new Set((DB.secretItems || []).map(x => x.id));
+            _invRarityMap  = {};
+            game.inv.forEach(i => { if(!_invRarityMap[i.id]) _invRarityMap[i.id] = i.rarityId; });
+        }
+
         function getItemRarityId(item) {
-            // Secret items always secret rarity
-            if(DB.secretItems && DB.secretItems.find(x => x.id === item.id)) return 'secret';
-            // Regular items from cases get a rarity assigned — use first unlocked instance's rarityId from inv
-            let invItem = game.inv.find(i => i.id === item.id);
-            if(invItem) return invItem.rarityId;
-            // If not in inventory (not obtained), treat as common for sorting
+            if(_secretItemSet && _secretItemSet.has(item.id)) return 'secret';
+            if(_invRarityMap  && _invRarityMap[item.id])      return _invRarityMap[item.id];
             return 'common';
         }
 
         function renderCollection() {
-            let c = document.getElementById('grid-collection');
-            c.innerHTML = '';
-            let allItems = [...DB.items, ...(DB.secretItems || [])];
-            let unlockedCount = 0;
-
+            const c = document.getElementById('grid-collection');
+            const allItems = [...DB.items, ...(DB.secretItems || [])];
             const rarityOrder = ['common','uncommon','rare','epic','legendary','mythic','secret'];
 
-            let rarityFilterVal = document.getElementById('coll-rarity-filter') ? document.getElementById('coll-rarity-filter').value : 'all';
-            let sortVal = document.getElementById('coll-sort') ? document.getElementById('coll-sort').value : 'default';
+            // Build fast lookups once
+            buildCollLookups();
 
-            // Count unlocked before filtering
-            allItems.forEach(i => { if(game.collection.includes(i.id)) unlockedCount++; });
+            const rarityFilterVal = (document.getElementById('coll-rarity-filter') || {}).value || 'all';
+            const sortVal         = (document.getElementById('coll-sort') || {}).value || 'default';
 
-            // Apply filter
-            let filtered = allItems.filter(i => {
-                let unlocked = game.collection.includes(i.id);
+            // Count unlocked (O(n) single pass with Set)
+            let unlockedCount = 0;
+            allItems.forEach(i => { if(_collectionSet.has(i.id)) unlockedCount++; });
+
+            // Pre-compute rarityId for each item (avoid repeated lookups in sort + render)
+            const itemMeta = allItems.map(i => {
+                const unlocked = _collectionSet.has(i.id);
+                const rid      = _secretItemSet.has(i.id) ? 'secret' : (unlocked ? (_invRarityMap[i.id] || 'common') : 'common');
+                return { item: i, unlocked, rid };
+            });
+
+            // Filter
+            let filtered = itemMeta.filter(({ unlocked, rid }) => {
                 if(collFilter === 'unlocked' && !unlocked) return false;
-                if(collFilter === 'locked' && unlocked) return false;
-                // Rarity filter
-                if(rarityFilterVal !== 'all') {
-                    let rid = getItemRarityId(i);
-                    if(rid !== rarityFilterVal) return false;
-                }
+                if(collFilter === 'locked'   &&  unlocked) return false;
+                if(rarityFilterVal !== 'all' && rid !== rarityFilterVal) return false;
                 return true;
             });
 
             // Sort
             if(sortVal === 'rarity-asc') {
-                filtered.sort((a,b) => rarityOrder.indexOf(getItemRarityId(a)) - rarityOrder.indexOf(getItemRarityId(b)));
+                filtered.sort((a, b) => rarityOrder.indexOf(a.rid) - rarityOrder.indexOf(b.rid));
             } else if(sortVal === 'rarity-desc') {
-                filtered.sort((a,b) => rarityOrder.indexOf(getItemRarityId(b)) - rarityOrder.indexOf(getItemRarityId(a)));
+                filtered.sort((a, b) => rarityOrder.indexOf(b.rid) - rarityOrder.indexOf(a.rid));
             } else if(sortVal === 'name') {
-                filtered.sort((a,b) => a.name.localeCompare(b.name));
+                filtered.sort((a, b) => a.item.name.localeCompare(b.item.name));
             }
 
-            filtered.forEach(i => {
-                let unlocked = game.collection.includes(i.id);
-                let isSecret = DB.secretItems && DB.secretItems.find(x => x.id === i.id);
-                let rid = isSecret ? 'secret' : (unlocked ? getItemRarityId(i) : 'common');
-                let rInfo = DB.rarities.find(r => r.id === rid) || DB.rarities[0];
-                let color = unlocked ? rInfo.color : '#666';
-                let rarityLabel = unlocked ? `<div style="font-size:10px; color:${color}; margin-top:2px;">${rInfo.name}</div>` : '';
+            // Build HTML in one string — single DOM write at the end
+            const rarityCache = {};
+            DB.rarities.forEach(r => { rarityCache[r.id] = r; });
 
-                c.innerHTML += `
-                <div class="inv-item ${unlocked?'':'silhouette'}" style="--item-color:${color}" title="${unlocked ? i.name + ' · ' + rInfo.name : '???'}">
-                    <div style="font-size:30px;">${unlocked ? i.icon : '❓'}</div>
-                    <div style="font-size:11px; margin:4px 0; color:${color}">${unlocked ? i.name : '???'}</div>
+            const parts = filtered.map(({ item, unlocked, rid }) => {
+                const rInfo = rarityCache[rid] || rarityCache['common'];
+                const color = unlocked ? rInfo.color : '#666';
+                const rarityLabel = unlocked ? `<div style="font-size:10px;color:${color};margin-top:2px;">${rInfo.name}</div>` : '';
+                return `<div class="inv-item${unlocked ? '' : ' silhouette'}" style="--item-color:${color}" title="${unlocked ? item.name + ' · ' + rInfo.name : '???'}">
+                    <div style="font-size:30px;">${unlocked ? item.icon : '❓'}</div>
+                    <div style="font-size:11px;margin:4px 0;color:${color}">${unlocked ? item.name : '???'}</div>
                     ${rarityLabel}
                 </div>`;
             });
+
+            c.innerHTML = parts.join(''); // single DOM write
 
             document.getElementById('coll-count').innerText = unlockedCount;
             document.getElementById('coll-total').innerText = allItems.length;
@@ -2647,9 +2751,47 @@
             document.getElementById('achiev-count').innerText = unlocked;
         }
 
+        function calcEarnedForGain(targetGain) {
+            return Math.pow(targetGain / 0.01, 1 / 0.3) * 1e6;
+        }
+
         function renderPrestige() {
-            document.getElementById('prest-current').innerText = 'x' + (1+game.prestigeMult).toFixed(2);
-            document.getElementById('prest-gain').innerText = '+' + calcPrestigeGain().toFixed(2);
+            let req = getPrestigeRequirement();
+            let gain = calcPrestigeGain();
+            let pct = Math.min(100, (game.money / req) * 100);
+            let canPrestige = game.money >= req;
+
+            document.getElementById('prest-title').innerText = 'Rebirth ' + (game.prestige + 1);
+            document.getElementById('prest-level').innerText = game.prestige;
+            document.getElementById('prest-current').innerText = 'x' + (1 + game.prestigeMult).toFixed(2);
+            document.getElementById('prest-gain').innerText = '+' + gain.toFixed(3);
+            document.getElementById('prest-money-label').innerText = formatMoney(game.money) + ' / ' + formatMoney(req);
+            document.getElementById('prest-progress-bar').style.width = pct.toFixed(1) + '%';
+            document.getElementById('prest-pct-label').innerText = pct.toFixed(1) + '%';
+
+            // Next 4 rebirths list
+            let nextHtml = '';
+            for(let i = 1; i <= 4; i++) {
+                let futureReq = Math.pow(5, game.prestige + i) * 1e6;
+                let futureGain = 0.10 + (game.prestige + i) * 0.02;
+                nextHtml += `<div style="display:flex; justify-content:space-between;"><span>Rebirth ${game.prestige + i + 1}</span><span style="color:var(--text-sec);">${formatMoney(futureReq)} → <span style="color:var(--pos);">+${futureGain.toFixed(2)}</span></span></div>`;
+            }
+            document.getElementById('prest-next-list').innerHTML = nextHtml;
+
+            let statusEl = document.getElementById('prest-status');
+            let btn = document.getElementById('prest-btn');
+            if(canPrestige) {
+                statusEl.innerHTML = `<span style="color:var(--pos);">✅ ¡Meta alcanzada! Puedes ascender ahora.</span>`;
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+            } else {
+                let remaining = req - game.money;
+                statusEl.innerHTML = `<span style="color:var(--neg);">Faltan <strong>${formatMoney(remaining)}</strong> para el siguiente rebirth.</span>`;
+                btn.disabled = true;
+                btn.style.opacity = '0.4';
+                btn.style.cursor = 'not-allowed';
+            }
         }
 
         function renderStats() {
@@ -2887,11 +3029,16 @@
             }
         }
 
+        // Baskets for multi-item trade
+        let tradeTheirBasket = []; // items we want from them
+        let tradeMyBasket = [];    // items we offer
+
         function renderTradeTab() {
             document.getElementById('my-trade-code').innerText = getMyTradeCode();
-            // Show local mode warning
             let banner = document.getElementById('trade-local-banner');
             if(banner) banner.style.display = IS_LOCAL ? 'block' : 'none';
+            tradeTheirBasket = []; tradeMyBasket = [];
+            renderBaskets();
             uploadMyInventory();
             checkIncomingTrades();
         }
@@ -2921,47 +3068,115 @@
             }
             resEl.innerText = '✅ Inventario de ' + targetCode + ' (' + data.items.length + ' objetos).';
             resEl.style.color = 'var(--pos)';
-            let theirSel = document.getElementById('trade-their-item');
-            theirSel.innerHTML = '<option value="">-- Su objeto que quieres --</option>';
+            // Reset baskets
+            tradeTheirBasket = []; tradeMyBasket = [];
+            // Populate their picker
+            let theirPicker = document.getElementById('trade-their-picker');
+            theirPicker.innerHTML = '<option value="">-- Selecciona su objeto --</option>';
             [...data.items].sort((a,b) => b.val - a.val).forEach(i => {
-                let safeObj = encodeURIComponent(JSON.stringify(i));
-                theirSel.innerHTML += `<option value="${i.uid}" data-obj="${safeObj}">[${i.rarityName}] ${i.icon} ${i.name} — ${formatMoney(i.val)}</option>`;
+                theirPicker.innerHTML += `<option value="${encodeURIComponent(JSON.stringify(i))}">[${i.rarityName}] ${i.icon} ${i.name} — ${formatMoney(i.val)}</option>`;
             });
-            let mySel = document.getElementById('trade-my-offer');
-            mySel.innerHTML = '<option value="">-- Tu objeto que ofreces --</option>';
+            // Populate my picker
+            let myPicker = document.getElementById('trade-my-picker');
+            myPicker.innerHTML = '<option value="">-- Selecciona tu objeto --</option>';
             [...game.inv].sort((a,b) => b.val - a.val).forEach(i => {
                 let iInfo = getItemInfo(i.id); let rInfo = getRarityInfo(i.rarityId);
-                if(iInfo && rInfo) mySel.innerHTML += `<option value="${i.uid}">[${rInfo.name}] ${iInfo.icon} ${iInfo.name} — ${formatMoney(i.val)}</option>`;
+                if(iInfo && rInfo) {
+                    let obj = { uid: i.uid, id: i.id, rarityId: i.rarityId, val: i.val,
+                        name: iInfo.name, icon: iInfo.icon, rarityName: rInfo.name, rarityColor: rInfo.color };
+                    myPicker.innerHTML += `<option value="${encodeURIComponent(JSON.stringify(obj))}">[${rInfo.name}] ${iInfo.icon} ${iInfo.name} — ${formatMoney(i.val)}</option>`;
+                }
             });
             invDiv.style.display = 'block';
             invDiv.dataset.targetCode = targetCode;
+            renderBaskets();
+        }
+
+        function addTheirItem() {
+            let picker = document.getElementById('trade-their-picker');
+            if(!picker.value) return;
+            let obj; try { obj = JSON.parse(decodeURIComponent(picker.value)); } catch(e) { return; }
+            // Avoid duplicates
+            if(tradeTheirBasket.find(x => x.uid === obj.uid)) { showNotification('Ya está en la oferta.'); return; }
+            if(tradeTheirBasket.length >= 8) { showNotification('Máximo 8 objetos por lado.'); return; }
+            tradeTheirBasket.push(obj);
+            renderBaskets();
+        }
+
+        function addMyItem() {
+            let picker = document.getElementById('trade-my-picker');
+            if(!picker.value) return;
+            let obj; try { obj = JSON.parse(decodeURIComponent(picker.value)); } catch(e) { return; }
+            if(tradeMyBasket.find(x => x.uid === obj.uid)) { showNotification('Ya está en la oferta.'); return; }
+            if(tradeMyBasket.length >= 8) { showNotification('Máximo 8 objetos por lado.'); return; }
+            tradeMyBasket.push(obj);
+            renderBaskets();
+        }
+
+        function removeTheirItem(uid) { tradeTheirBasket = tradeTheirBasket.filter(x => x.uid !== uid); renderBaskets(); }
+        function removeMyItem(uid)   { tradeMyBasket   = tradeMyBasket.filter(x => x.uid !== uid);   renderBaskets(); }
+
+        function renderBaskets() {
+            let theirEl = document.getElementById('trade-their-basket');
+            let myEl = document.getElementById('trade-my-basket');
+            let theirEmpty = document.getElementById('their-empty');
+            let myEmpty = document.getElementById('my-empty');
+            if(!theirEl || !myEl) return;
+
+            // Their basket
+            theirEl.innerHTML = '';
+            let theirTotal = 0;
+            if(tradeTheirBasket.length === 0) {
+                theirEl.innerHTML = '<span style="color:var(--text-sec); font-size:12px;">Nada aún</span>';
+            } else {
+                tradeTheirBasket.forEach(i => {
+                    theirTotal += i.val || 0;
+                    theirEl.innerHTML += `<div style="background:var(--bg-main); border:1px solid ${i.rarityColor}; border-radius:6px; padding:4px 8px; font-size:12px; display:flex; align-items:center; gap:4px;">
+                        <span style="color:${i.rarityColor}">${i.icon} ${i.name}</span>
+                        <span onclick="removeTheirItem(${i.uid})" style="cursor:pointer; color:var(--neg); font-weight:bold; margin-left:4px;">✕</span>
+                    </div>`;
+                });
+            }
+            document.getElementById('their-basket-val').innerText = formatMoney(theirTotal);
+
+            // My basket
+            myEl.innerHTML = '';
+            let myTotal = 0;
+            if(tradeMyBasket.length === 0) {
+                myEl.innerHTML = '<span style="color:var(--text-sec); font-size:12px;">Nada aún</span>';
+            } else {
+                tradeMyBasket.forEach(i => {
+                    myTotal += i.val || 0;
+                    myEl.innerHTML += `<div style="background:var(--bg-main); border:1px solid ${i.rarityColor}; border-radius:6px; padding:4px 8px; font-size:12px; display:flex; align-items:center; gap:4px;">
+                        <span style="color:${i.rarityColor}">${i.icon} ${i.name}</span>
+                        <span onclick="removeMyItem(${i.uid})" style="cursor:pointer; color:var(--neg); font-weight:bold; margin-left:4px;">✕</span>
+                    </div>`;
+                });
+            }
+            document.getElementById('my-basket-val').innerText = formatMoney(myTotal);
         }
 
         async function proposeTrade() {
             let targetCode = (document.getElementById('trade-browse-inv').dataset.targetCode || '').trim();
-            let theirSel = document.getElementById('trade-their-item');
-            let myUid = parseInt(document.getElementById('trade-my-offer').value);
             let resEl = document.getElementById('trade-item-result');
             if(!targetCode) { resEl.innerText = '❌ Primero busca el inventario.'; resEl.style.color='var(--neg)'; return; }
-            if(!theirSel.value) { resEl.innerText = '❌ Selecciona su objeto.'; resEl.style.color='var(--neg)'; return; }
-            if(isNaN(myUid)) { resEl.innerText = '❌ Selecciona tu objeto.'; resEl.style.color='var(--neg)'; return; }
-            let myItemIdx = game.inv.findIndex(i => i.uid === myUid);
-            if(myItemIdx === -1) { resEl.innerText = '❌ Tu objeto no encontrado.'; resEl.style.color='var(--neg)'; return; }
-            let myItem = game.inv[myItemIdx];
-            let myIInfo = getItemInfo(myItem.id); let myRInfo = getRarityInfo(myItem.rarityId);
-            let theirObj = {};
-            try { theirObj = JSON.parse(decodeURIComponent(theirSel.options[theirSel.selectedIndex].dataset.obj || '{}')); } catch(e) {}
+            if(tradeTheirBasket.length === 0 && tradeMyBasket.length === 0) {
+                resEl.innerText = '❌ Añade al menos un objeto a la oferta.'; resEl.style.color='var(--neg)'; return;
+            }
             resEl.innerText = '⏳ Enviando propuesta...'; resEl.style.color='var(--text-sec)';
             let ok = await fbPush('/trades/' + targetCode, {
                 type: 'item_swap', from: getMyTradeCode(),
-                offeredItem: { uid: myItem.uid, id: myItem.id, rarityId: myItem.rarityId, val: myItem.val,
-                    name: myIInfo ? myIInfo.name : '???', icon: myIInfo ? myIInfo.icon : '📦',
-                    rarityName: myRInfo ? myRInfo.name : '?', rarityColor: myRInfo ? myRInfo.color : '#fff' },
-                wantedItem: theirObj, ts: Date.now()
+                offeredItems: tradeMyBasket,   // what I offer (they receive)
+                wantedItems: tradeTheirBasket, // what I want (they give)
+                ts: Date.now()
             });
             if(ok) {
-                resEl.innerText = `✅ Propuesta enviada: tu ${myIInfo ? myIInfo.name : '???'} por su ${theirObj.name || '???'}.`;
+                let offNames = tradeMyBasket.map(i => i.name).join(', ') || 'nada';
+                let wantNames = tradeTheirBasket.map(i => i.name).join(', ') || 'nada';
+                resEl.innerText = `✅ Propuesta enviada a ${targetCode}. Ofreces: [${offNames}] por: [${wantNames}].`;
                 resEl.style.color = 'var(--pos)';
+                tradeTheirBasket = []; tradeMyBasket = [];
+                renderBaskets();
             } else { resEl.innerText = '❌ Error de conexión.'; resEl.style.color = 'var(--neg)'; }
         }
 
@@ -3006,16 +3221,38 @@
                         <button class="btn btn-success" style="margin-top:8px; width:auto; padding:5px 15px;" onclick="acceptTrade('${key}')">✅ Aceptar</button>
                     </div>`;
                 } else if(t.type === 'item_swap') {
-                    let off = t.offeredItem || {}; let want = t.wantedItem || {};
-                    container.innerHTML += `<div style="background:var(--bg-main); padding:12px; border-radius:8px; margin-bottom:8px; border:1px solid ${off.rarityColor || '#aaa'};">
-                        <div style="font-weight:bold; margin-bottom:6px;">🤝 Propuesta de <strong>${t.from}</strong></div>
-                        <div style="font-size:13px; margin-bottom:3px;">Te ofrecen: <span style="color:${off.rarityColor || '#fff'}">${off.icon || '📦'} ${off.name || '???'} [${off.rarityName || '?'}]</span></div>
-                        <div style="font-size:13px;">A cambio de tu: <span style="color:${want.rarityColor || '#fff'}">${want.icon || '📦'} ${want.name || '???'} [${want.rarityName || '?'}]</span></div>
-                        <div style="font-size:12px; color:var(--text-sec); margin-top:4px;">${date}</div>
-                        <div style="display:flex; gap:8px; margin-top:8px;">
-                            <button class="btn btn-success" style="width:auto; padding:5px 15px;" onclick="acceptTrade('${key}')">✅ Aceptar</button>
-                            <button class="btn btn-danger" style="width:auto; padding:5px 15px;" onclick="rejectTrade('${key}')">❌ Rechazar</button>
+                    let offered = t.offeredItems || [];
+                    let wanted  = t.wantedItems  || [];
+                    let offHtml = offered.length ? offered.map(i => `<span style="color:${i.rarityColor||'#fff'}">${i.icon||'📦'} ${i.name||'???'}</span>`).join(', ') : '<em>nada</em>';
+                    let wantHtml = wanted.length  ? wanted.map(i =>  `<span style="color:${i.rarityColor||'#fff'}">${i.icon||'📦'} ${i.name||'???'}</span>`).join(', ') : '<em>nada</em>';
+                    let offVal  = offered.reduce((s,i) => s + (i.val||0), 0);
+                    let wantVal = wanted.reduce((s,i)  => s + (i.val||0), 0);
+                    container.innerHTML += `<div style="background:var(--bg-main); padding:14px; border-radius:8px; margin-bottom:10px; border:1px solid var(--accent);">
+                        <div style="font-weight:bold; margin-bottom:8px;">🤝 Propuesta de intercambio de <strong>${t.from}</strong> · ${date}</div>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px;">
+                            <div style="background:var(--bg-card); border-radius:8px; padding:10px;">
+                                <div style="font-size:11px; color:var(--text-sec); margin-bottom:6px;">Ellos te ofrecen:</div>
+                                <div style="font-size:13px; line-height:1.8;">${offHtml}</div>
+                                <div style="font-size:11px; color:var(--pos); margin-top:6px;">Valor: ${formatMoney(offVal)}</div>
+                            </div>
+                            <div style="background:var(--bg-card); border-radius:8px; padding:10px;">
+                                <div style="font-size:11px; color:var(--text-sec); margin-bottom:6px;">A cambio de tus:</div>
+                                <div style="font-size:13px; line-height:1.8;">${wantHtml}</div>
+                                <div style="font-size:11px; color:var(--neg); margin-top:6px;">Valor: ${formatMoney(wantVal)}</div>
+                            </div>
                         </div>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn btn-success" style="width:auto; padding:6px 18px;" onclick="acceptTrade('${key}')">✅ Aceptar</button>
+                            <button class="btn btn-danger" style="width:auto; padding:6px 18px;" onclick="rejectTrade('${key}')">❌ Rechazar</button>
+                        </div>
+                    </div>`;
+                } else if(t.type === 'item_delivered') {
+                    let items = t.items || (t.item ? [t.item] : []);
+                    let html = items.map(i => `<span style="color:${i.rarityColor||'#fff'}">${i.icon||'📦'} ${i.name||'???'}</span>`).join(', ');
+                    container.innerHTML += `<div style="background:var(--bg-main); padding:12px; border-radius:8px; margin-bottom:8px; border:1px solid var(--pos);">
+                        <div style="font-weight:bold; color:var(--pos);">📦 Trade completado por ${t.from}</div>
+                        <div style="font-size:13px; margin-top:4px;">Recibes: ${html}</div>
+                        <button class="btn btn-success" style="margin-top:8px; width:auto; padding:5px 15px;" onclick="acceptTrade('${key}')">✅ Reclamar</button>
                     </div>`;
                 }
             });
@@ -3026,32 +3263,40 @@
             if(!t) { showNotification('❌ Actualiza la bandeja.'); return; }
             await fbDelete('/trades/' + getMyTradeCode() + '/' + key);
             delete pendingTradesMap[key];
+
             if(t.type === 'money') {
                 addMoney(t.amount); updateTopBar();
                 showNotification('💸 +' + formatMoney(t.amount) + ' recibidos de ' + t.from);
             } else if(t.type === 'item_swap') {
-                let off = t.offeredItem || {}; let want = t.wantedItem || {};
-                // Remove the wanted item from my inventory
-                let wantIdx = game.inv.findIndex(i => i.uid === want.uid);
-                if(wantIdx !== -1) game.inv.splice(wantIdx, 1);
-                // Add the offered item
-                game.inv.push({ uid: ++uidCounter, id: off.id, rarityId: off.rarityId, val: off.val });
-                addToCollection(off.id);
-                // Send the wanted item to the proposer as a completed delivery
+                let offered = t.offeredItems || [];
+                let wanted  = t.wantedItems  || [];
+                // Remove wanted items from my inventory
+                wanted.forEach(w => {
+                    let idx = game.inv.findIndex(i => i.uid === w.uid);
+                    if(idx !== -1) game.inv.splice(idx, 1);
+                });
+                // Add offered items to my inventory
+                offered.forEach(o => {
+                    game.inv.push({ uid: ++uidCounter, id: o.id, rarityId: o.rarityId, val: o.val });
+                    addToCollection(o.id);
+                });
+                // Send wanted items back to proposer as delivery
                 await fbPush('/trades/' + t.from, {
                     type: 'item_delivered', from: getMyTradeCode(),
-                    item: { uid: ++uidCounter, id: want.id, rarityId: want.rarityId, val: want.val,
-                        name: want.name, icon: want.icon, rarityName: want.rarityName, rarityColor: want.rarityColor },
+                    items: wanted.map(w => ({ uid: ++uidCounter, id: w.id, rarityId: w.rarityId, val: w.val,
+                        name: w.name, icon: w.icon, rarityName: w.rarityName, rarityColor: w.rarityColor })),
                     ts: Date.now()
                 });
                 renderInv(); uploadMyInventory();
-                showNotification('🔄 ¡Intercambio aceptado! Recibiste ' + (off.name || '???'));
+                showNotification('🔄 ¡Intercambio aceptado! Recibiste ' + offered.map(i=>i.name).join(', '));
             } else if(t.type === 'item_delivered') {
-                let item = t.item || {};
-                game.inv.push({ uid: ++uidCounter, id: item.id, rarityId: item.rarityId, val: item.val });
-                addToCollection(item.id);
+                let items = t.items || (t.item ? [t.item] : []);
+                items.forEach(item => {
+                    game.inv.push({ uid: ++uidCounter, id: item.id, rarityId: item.rarityId, val: item.val });
+                    addToCollection(item.id);
+                });
                 renderInv(); uploadMyInventory();
-                showNotification('📦 Trade completado! Recibiste ' + (item.name || '???'));
+                showNotification('📦 Trade completado! Recibiste ' + items.map(i=>i.name).join(', '));
             }
             saveGame(); checkIncomingTrades();
         }
@@ -3062,6 +3307,7 @@
             showNotification('Trade rechazado.');
             checkIncomingTrades();
         }
+
 
         // --- Global Timers
         setInterval(saveGame, 10000); 
