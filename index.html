@@ -42,10 +42,15 @@
             background-color: var(--bg-main);
             color: var(--text-main);
             overflow-x: hidden;
+            display: block;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        #game-wrapper {
             display: flex;
             flex-direction: column;
             height: 100vh;
-            position: relative;
         }
 
         .shake { animation: shake 0.5s; }
@@ -481,6 +486,9 @@
             <div class="login-guest">¿Sin cuenta? <span onclick="playAsGuest()">Jugar como invitado</span> (sin guardado en nube)</div>
         </div>
     </div>
+
+    <div id="game-wrapper">
+    <div class="topbar">
         <div class="title" id="game-title" onclick="triggerTitleEasterEgg()" title="Haz clic varias veces...">💰 MONEY SIMULATOR ULTIMATE</div>
         <div class="stats-container">
             <div class="stat-box">
@@ -961,6 +969,8 @@
 
     <!-- EASTER EGG PIXEL -->
     <div id="secret-pixel" onclick="triggerPixelEasterEgg()" title="¿Qué haces por aquí abajo?"></div>
+
+    </div><!-- end game-wrapper -->
 
     <script>
         // --- DATA DE JUEGO BASE Y EXPANSIÓN ---
@@ -3442,25 +3452,30 @@
         }
 
         async function onLoginSuccess() {
-            // Try to load cloud save first; fall back to localStorage
-            const cloudData = await loadFromCloud();
-            if(cloudData && cloudData.money !== undefined) {
-                game = { ...game, ...cloudData };
-            } else {
-                loadGame(); // uses localStorage
-            }
             document.getElementById('login-screen').classList.add('hidden');
             isGuest = false;
-            postLoginInit();
+            // Try cloud save first
+            const cloudData = await loadFromCloud();
+            if(cloudData && cloudData.money !== undefined) {
+                // Merge cloud data into game state then start
+                game = { ...game, ...cloudData };
+                lastTick = performance.now();
+                if(!loopId) loopId = requestAnimationFrame(gameLoop);
+                // Still run loadGame compatibility checks
+                loadGame();
+            } else {
+                // No cloud save → use localStorage
+                initGame();
+            }
             updateSettingsAccountUI();
+            updateUI_Full();
         }
 
         function playAsGuest() {
             isGuest = true;
             currentUser = null;
             document.getElementById('login-screen').classList.add('hidden');
-            loadGame();
-            postLoginInit();
+            initGame();
             updateSettingsAccountUI();
         }
 
@@ -3539,7 +3554,6 @@
             const email = localStorage.getItem('msu_email');
             const token = localStorage.getItem('msu_token');
             if(!uid || !email || !token) return false;
-            // Verify token is still valid
             try {
                 const res  = await fetch(`${FB_AUTH_URL}:lookup?key=${FB_API_KEY}`, {
                     method: 'POST',
@@ -3552,6 +3566,10 @@
                     return true;
                 }
             } catch(e) {}
+            // Token invalid or expired — clear it so login screen shows
+            localStorage.removeItem('msu_uid');
+            localStorage.removeItem('msu_email');
+            localStorage.removeItem('msu_token');
             return false;
         }
 
@@ -3627,28 +3645,14 @@
         // BOOT — runs on page load
         // =============================================
         async function postLoginInit() {
-            // Finalize game init after login/guest
             initGame();
         }
 
-        // Override old init so we control timing
         function initGame() {
             lastTick = performance.now();
             loadGame();
-            loopId = requestAnimationFrame(gameLoop);
+            if(!loopId) loopId = requestAnimationFrame(gameLoop);
         }
-
-        // On page load: load language, then try silent login or show login screen
-        (async () => {
-            const savedLang = localStorage.getItem('msu_lang') || 'es';
-            setLanguage(savedLang);
-
-            const ok = await trySilentLogin();
-            if(ok) {
-                await onLoginSuccess();
-            }
-            // else: login screen stays visible
-        })();
 
         // --- Global Timers
         setInterval(saveGame, 10000); 
@@ -3676,11 +3680,21 @@
         });
 
         // --- INIT ---
-        window.onload = () => {
+        window.onload = async () => {
             lastTick = performance.now();
-            // Boot is handled by the async IIFE above (trySilentLogin → onLoginSuccess or login screen shown)
-            // generateItems is called once here so DB is populated before any render
             generateItems();
+
+            // Load language first
+            const savedLang = localStorage.getItem('msu_lang') || 'es';
+            setLanguage(savedLang);
+
+            // Try silent re-login (token stored from previous session)
+            const ok = await trySilentLogin();
+            if(ok) {
+                // Has valid session → load cloud save and go straight in
+                await onLoginSuccess();
+            }
+            // else: login screen stays visible — user must log in or play as guest
         };
 
     </script>
