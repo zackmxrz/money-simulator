@@ -431,11 +431,56 @@
             background: var(--bg-surface); padding: 15px; border-radius: 12px; margin-bottom: 20px;
         }
         .quest-category h3 { margin-bottom: 15px; color: var(--accent); border-bottom: 1px solid var(--border); padding-bottom:5px;}
+
+        /* LOGIN SCREEN */
+        #login-screen {
+            position: fixed; inset: 0; background: var(--bg-main);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 9999; flex-direction: column;
+        }
+        #login-screen.hidden { display: none; }
+        .login-box {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 18px; padding: 40px 36px; width: 100%; max-width: 400px;
+            box-shadow: 0 8px 40px #0008;
+        }
+        .login-box h1 { color: var(--accent); font-size: 22px; margin-bottom: 6px; text-align:center; }
+        .login-box p  { color: var(--text-sec); font-size: 13px; text-align:center; margin-bottom: 24px; }
+        .login-input {
+            width: 100%; padding: 12px 14px; border-radius: 8px;
+            background: var(--bg-main); border: 1px solid var(--border);
+            color: var(--text-main); font-size: 14px; margin-bottom: 12px; box-sizing: border-box;
+        }
+        .login-input:focus { outline: none; border-color: var(--accent); }
+        .login-tabs { display:flex; gap:8px; margin-bottom:20px; }
+        .login-tab { flex:1; padding:8px; border-radius:8px; background:var(--bg-main);
+            border:1px solid var(--border); color:var(--text-sec); cursor:pointer; font-size:13px; }
+        .login-tab.active { background:var(--accent); color:#000; border-color:var(--accent); font-weight:bold; }
+        .login-err { color: var(--neg); font-size:12px; margin-bottom:10px; min-height:18px; text-align:center; }
+        .login-ok  { color: var(--pos); font-size:12px; margin-bottom:10px; min-height:18px; text-align:center; }
+        #login-screen .btn { width:100%; margin-top:4px; }
+        .login-guest { margin-top:14px; text-align:center; font-size:12px; color:var(--text-sec); cursor:pointer; }
+        .login-guest span { color:var(--accent); text-decoration:underline; cursor:pointer; }
     </style>
 </head>
 <body>
 
-    <div class="topbar">
+    <!-- LOGIN SCREEN -->
+    <div id="login-screen">
+        <div class="login-box">
+            <h1>💰 Money Simulator</h1>
+            <p id="login-subtitle">Inicia sesión para guardar tu progreso en la nube</p>
+            <div class="login-tabs">
+                <button class="login-tab active" onclick="switchLoginTab('login')" id="tab-login-btn">Iniciar sesión</button>
+                <button class="login-tab" onclick="switchLoginTab('register')" id="tab-register-btn">Registrarse</button>
+            </div>
+            <input class="login-input" type="email" id="login-email" placeholder="Correo electrónico">
+            <input class="login-input" type="password" id="login-password" placeholder="Contraseña (mín. 6 caracteres)">
+            <div class="login-err" id="login-err"></div>
+            <button class="btn btn-action" id="login-submit-btn" onclick="submitLogin()">Entrar</button>
+            <div class="login-guest">¿Sin cuenta? <span onclick="playAsGuest()">Jugar como invitado</span> (sin guardado en nube)</div>
+        </div>
+    </div>
         <div class="title" id="game-title" onclick="triggerTitleEasterEgg()" title="Haz clic varias veces...">💰 MONEY SIMULATOR ULTIMATE</div>
         <div class="stats-container">
             <div class="stat-box">
@@ -851,14 +896,29 @@
 
         <!-- CONFIG -->
         <div id="tab-settings" class="tab-content">
-            <div class="tab-header"><h2>Configuración</h2></div>
+            <div class="tab-header"><h2 data-i18n="settings">Configuración</h2></div>
             <div class="grid">
                 <div class="card">
-                    <h3>Guardado</h3>
-                    <button class="btn btn-buy" onclick="saveGame(true)">Guardar Manualmente</button>
-                    <button class="btn btn-buy" onclick="exportSave()">Exportar Partida</button>
-                    <button class="btn btn-buy" onclick="importSave()">Importar Partida</button>
-                    <button class="btn btn-danger" onclick="hardReset()">Borrar Todo</button>
+                    <h3 data-i18n="account">👤 Cuenta</h3>
+                    <div id="settings-account-info" style="margin-bottom:12px; font-size:13px; color:var(--text-sec);"></div>
+                    <button class="btn btn-buy" onclick="saveToCloud(true)" id="btn-cloud-save" style="display:none;" data-i18n="saveCloud">☁️ Guardar en la nube</button>
+                    <button class="btn btn-danger" onclick="logoutGame()" id="btn-logout" style="display:none;" data-i18n="logout">Cerrar sesión</button>
+                    <button class="btn btn-buy" onclick="document.getElementById('login-screen').classList.remove('hidden')" id="btn-login-goto" style="display:none;" data-i18n="login">Iniciar sesión</button>
+                </div>
+                <div class="card">
+                    <h3 data-i18n="saveLoad">💾 Guardado Local</h3>
+                    <button class="btn btn-buy" onclick="saveGame(true)" data-i18n="saveManual">Guardar Manualmente</button>
+                    <button class="btn btn-buy" onclick="exportSave()" data-i18n="exportSave">Exportar Partida</button>
+                    <button class="btn btn-buy" onclick="importSave()" data-i18n="importSave">Importar Partida</button>
+                    <button class="btn btn-danger" onclick="hardReset()" data-i18n="hardReset">Borrar Todo</button>
+                </div>
+                <div class="card">
+                    <h3 data-i18n="language">🌐 Idioma / Language</h3>
+                    <div style="display:flex; gap:10px; margin-top:8px;">
+                        <button class="btn btn-buy" id="lang-es-btn" onclick="setLanguage('es')" style="flex:1;">🇪🇸 Español</button>
+                        <button class="btn btn-buy" id="lang-en-btn" onclick="setLanguage('en')" style="flex:1;">🇬🇧 English</button>
+                    </div>
+                    <div id="lang-status" style="margin-top:10px; font-size:12px; color:var(--text-sec);"></div>
                 </div>
             </div>
         </div>
@@ -3309,6 +3369,287 @@
         }
 
 
+        // =============================================
+        // AUTH SYSTEM (Firebase Auth REST API)
+        // =============================================
+        const FB_API_KEY   = 'AIzaSyBzpCZ14duuPwnOWB7TFKbC8Q_90v3GMKU';
+        const FB_AUTH_URL  = 'https://identitytoolkit.googleapis.com/v1/accounts';
+        let currentUser    = null; // { uid, email, idToken }
+        let isGuest        = false;
+
+        // --- Login screen tab switch ---
+        let loginMode = 'login';
+        function switchLoginTab(mode) {
+            loginMode = mode;
+            document.getElementById('tab-login-btn').classList.toggle('active', mode === 'login');
+            document.getElementById('tab-register-btn').classList.toggle('active', mode === 'register');
+            document.getElementById('login-submit-btn').innerText = mode === 'login' ? (i18n.enter || 'Entrar') : (i18n.register || 'Registrarse');
+            document.getElementById('login-err').innerText = '';
+        }
+
+        async function submitLogin() {
+            const email    = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            const errEl    = document.getElementById('login-err');
+            errEl.innerText = '';
+
+            if(!email || !password) { errEl.innerText = i18n.fillFields || 'Rellena todos los campos.'; return; }
+            if(password.length < 6) { errEl.innerText = i18n.passMin || 'La contraseña debe tener al menos 6 caracteres.'; return; }
+
+            const btn = document.getElementById('login-submit-btn');
+            btn.disabled = true; btn.innerText = '⏳';
+
+            const endpoint = loginMode === 'login'
+                ? `${FB_AUTH_URL}:signInWithPassword?key=${FB_API_KEY}`
+                : `${FB_AUTH_URL}:signUp?key=${FB_API_KEY}`;
+
+            try {
+                const res  = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, returnSecureToken: true })
+                });
+                const data = await res.json();
+                if(data.error) {
+                    const msgs = {
+                        'EMAIL_EXISTS':           i18n.emailExists    || 'Este correo ya está registrado.',
+                        'EMAIL_NOT_FOUND':        i18n.emailNotFound  || 'Correo no encontrado.',
+                        'INVALID_PASSWORD':       i18n.wrongPass      || 'Contraseña incorrecta.',
+                        'WEAK_PASSWORD':          i18n.weakPass       || 'Contraseña demasiado débil.',
+                        'INVALID_LOGIN_CREDENTIALS': i18n.wrongPass   || 'Correo o contraseña incorrectos.',
+                        'TOO_MANY_ATTEMPTS_TRY_LATER': i18n.tooMany   || 'Demasiados intentos. Espera un momento.'
+                    };
+                    let code = data.error.message || '';
+                    // Firebase sometimes appends extra info after a colon
+                    let key = Object.keys(msgs).find(k => code.startsWith(k)) || '';
+                    errEl.innerText = msgs[key] || code;
+                    btn.disabled = false;
+                    btn.innerText = loginMode === 'login' ? (i18n.enter || 'Entrar') : (i18n.register || 'Registrarse');
+                    return;
+                }
+                // Success
+                currentUser = { uid: data.localId, email: data.email, idToken: data.idToken };
+                isGuest = false;
+                localStorage.setItem('msu_uid',     currentUser.uid);
+                localStorage.setItem('msu_email',   currentUser.email);
+                localStorage.setItem('msu_token',   currentUser.idToken);
+                await onLoginSuccess();
+            } catch(e) {
+                errEl.innerText = i18n.connError || 'Error de conexión. Comprueba internet.';
+                btn.disabled = false;
+                btn.innerText = loginMode === 'login' ? (i18n.enter || 'Entrar') : (i18n.register || 'Registrarse');
+            }
+        }
+
+        async function onLoginSuccess() {
+            // Try to load cloud save first; fall back to localStorage
+            const cloudData = await loadFromCloud();
+            if(cloudData && cloudData.money !== undefined) {
+                game = { ...game, ...cloudData };
+            } else {
+                loadGame(); // uses localStorage
+            }
+            document.getElementById('login-screen').classList.add('hidden');
+            isGuest = false;
+            postLoginInit();
+            updateSettingsAccountUI();
+        }
+
+        function playAsGuest() {
+            isGuest = true;
+            currentUser = null;
+            document.getElementById('login-screen').classList.add('hidden');
+            loadGame();
+            postLoginInit();
+            updateSettingsAccountUI();
+        }
+
+        function updateSettingsAccountUI() {
+            const infoEl       = document.getElementById('settings-account-info');
+            const btnCloud     = document.getElementById('btn-cloud-save');
+            const btnLogout    = document.getElementById('btn-logout');
+            const btnLoginGoto = document.getElementById('btn-login-goto');
+
+            if(currentUser) {
+                infoEl.innerHTML = `<span style="color:var(--pos);">✅ ${i18n.loggedAs || 'Conectado como'} <strong>${currentUser.email}</strong></span>`;
+                btnCloud.style.display     = 'block';
+                btnLogout.style.display    = 'block';
+                btnLoginGoto.style.display = 'none';
+            } else {
+                infoEl.innerHTML = `<span style="color:var(--text-sec);">${i18n.guestMode || '👤 Modo invitado — progreso solo en este navegador'}</span>`;
+                btnCloud.style.display     = 'none';
+                btnLogout.style.display    = 'none';
+                btnLoginGoto.style.display = 'block';
+            }
+        }
+
+        function logoutGame() {
+            if(!confirm(i18n.confirmLogout || '¿Cerrar sesión? El progreso local se mantiene.')) return;
+            currentUser = null;
+            isGuest = true;
+            localStorage.removeItem('msu_uid');
+            localStorage.removeItem('msu_email');
+            localStorage.removeItem('msu_token');
+            updateSettingsAccountUI();
+            showNotification(i18n.loggedOut || 'Sesión cerrada.');
+        }
+
+        // --- Cloud Save / Load ---
+        async function saveToCloud(manual = false) {
+            if(!currentUser) return;
+            game.lastSave = Date.now();
+            const path = `/users/${currentUser.uid}/save.json?auth=${currentUser.idToken}`;
+            try {
+                const res = await fetch(FIREBASE_URL + path, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(game)
+                });
+                if(res.ok && manual) showNotification(i18n.cloudSaved || '☁️ Partida guardada en la nube.');
+            } catch(e) {
+                if(manual) showNotification(i18n.cloudSaveErr || '❌ Error al guardar en la nube.');
+            }
+        }
+
+        async function loadFromCloud() {
+            if(!currentUser) return null;
+            const path = `/users/${currentUser.uid}/save.json?auth=${currentUser.idToken}`;
+            try {
+                const res = await fetch(FIREBASE_URL + path);
+                if(!res.ok) return null;
+                return await res.json();
+            } catch(e) { return null; }
+        }
+
+        // Auto-save to cloud every 60s if logged in
+        setInterval(() => { if(currentUser) saveToCloud(); }, 60000);
+
+        // Override saveGame to also push to cloud when logged in
+        const _origSaveGame = saveGame;
+        function saveGame(manual = false) {
+            game.lastSave = Date.now();
+            localStorage.setItem('moneySimData', JSON.stringify(game));
+            if(manual) showNotification(i18n.saved || 'Partida guardada.');
+            if(currentUser) saveToCloud(false);
+        }
+
+        // Try silent re-login from stored token on page load
+        async function trySilentLogin() {
+            const uid   = localStorage.getItem('msu_uid');
+            const email = localStorage.getItem('msu_email');
+            const token = localStorage.getItem('msu_token');
+            if(!uid || !email || !token) return false;
+            // Verify token is still valid
+            try {
+                const res  = await fetch(`${FB_AUTH_URL}:lookup?key=${FB_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ idToken: token })
+                });
+                const data = await res.json();
+                if(data.users && data.users.length > 0) {
+                    currentUser = { uid, email, idToken: token };
+                    return true;
+                }
+            } catch(e) {}
+            return false;
+        }
+
+        // =============================================
+        // i18n — LANGUAGE SYSTEM
+        // =============================================
+        const TRANSLATIONS = {
+            es: {
+                settings: 'Configuración', account: '👤 Cuenta', saveLoad: '💾 Guardado Local',
+                language: '🌐 Idioma / Language', saveManual: 'Guardar Manualmente',
+                exportSave: 'Exportar Partida', importSave: 'Importar Partida', hardReset: 'Borrar Todo',
+                saveCloud: '☁️ Guardar en la nube', logout: 'Cerrar sesión', login: 'Iniciar sesión',
+                loggedAs: 'Conectado como', guestMode: '👤 Modo invitado — progreso solo en este navegador',
+                confirmLogout: '¿Cerrar sesión? El progreso local se mantiene.', loggedOut: 'Sesión cerrada.',
+                cloudSaved: '☁️ Partida guardada en la nube.', cloudSaveErr: '❌ Error al guardar en la nube.',
+                saved: 'Partida guardada.', connError: 'Error de conexión. Comprueba internet.',
+                fillFields: 'Rellena todos los campos.', passMin: 'La contraseña debe tener al menos 6 caracteres.',
+                emailExists: 'Este correo ya está registrado.', emailNotFound: 'Correo no encontrado.',
+                wrongPass: 'Correo o contraseña incorrectos.', weakPass: 'Contraseña demasiado débil.',
+                tooMany: 'Demasiados intentos. Espera un momento.',
+                enter: 'Entrar', register: 'Registrarse',
+                loginTitle: 'Inicia sesión para guardar tu progreso en la nube',
+                langActive: '✅ Idioma activo: Español'
+            },
+            en: {
+                settings: 'Settings', account: '👤 Account', saveLoad: '💾 Local Save',
+                language: '🌐 Language / Idioma', saveManual: 'Save Manually',
+                exportSave: 'Export Save', importSave: 'Import Save', hardReset: 'Delete Everything',
+                saveCloud: '☁️ Save to Cloud', logout: 'Log Out', login: 'Log In',
+                loggedAs: 'Logged in as', guestMode: '👤 Guest mode — progress only in this browser',
+                confirmLogout: 'Log out? Local progress is kept.', loggedOut: 'Logged out.',
+                cloudSaved: '☁️ Game saved to cloud.', cloudSaveErr: '❌ Error saving to cloud.',
+                saved: 'Game saved.', connError: 'Connection error. Check internet.',
+                fillFields: 'Please fill in all fields.', passMin: 'Password must be at least 6 characters.',
+                emailExists: 'This email is already registered.', emailNotFound: 'Email not found.',
+                wrongPass: 'Wrong email or password.', weakPass: 'Password too weak.',
+                tooMany: 'Too many attempts. Please wait.',
+                enter: 'Log In', register: 'Register',
+                loginTitle: 'Log in to save your progress to the cloud',
+                langActive: '✅ Active language: English'
+            }
+        };
+
+        let currentLang = 'es';
+        let i18n = TRANSLATIONS.es;
+
+        function setLanguage(lang) {
+            if(!TRANSLATIONS[lang]) return;
+            currentLang = lang;
+            i18n = TRANSLATIONS[lang];
+            localStorage.setItem('msu_lang', lang);
+
+            // Update i18n elements
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.dataset.i18n;
+                if(i18n[key]) el.innerText = i18n[key];
+            });
+
+            // Update login screen
+            const sub = document.getElementById('login-subtitle');
+            if(sub) sub.innerText = i18n.loginTitle;
+            switchLoginTab(loginMode);
+
+            // Update language buttons
+            document.getElementById('lang-es-btn').style.border = lang === 'es' ? '2px solid var(--accent)' : '';
+            document.getElementById('lang-en-btn').style.border = lang === 'en' ? '2px solid var(--accent)' : '';
+            document.getElementById('lang-status').innerText = i18n.langActive;
+
+            updateSettingsAccountUI();
+        }
+
+        // =============================================
+        // BOOT — runs on page load
+        // =============================================
+        async function postLoginInit() {
+            // Finalize game init after login/guest
+            initGame();
+        }
+
+        // Override old init so we control timing
+        function initGame() {
+            lastTick = performance.now();
+            loadGame();
+            loopId = requestAnimationFrame(gameLoop);
+        }
+
+        // On page load: load language, then try silent login or show login screen
+        (async () => {
+            const savedLang = localStorage.getItem('msu_lang') || 'es';
+            setLanguage(savedLang);
+
+            const ok = await trySilentLogin();
+            if(ok) {
+                await onLoginSuccess();
+            }
+            // else: login screen stays visible
+        })();
+
         // --- Global Timers
         setInterval(saveGame, 10000); 
         setInterval(updateStocks, 5000); 
@@ -3336,9 +3677,10 @@
 
         // --- INIT ---
         window.onload = () => {
-            loadGame();
             lastTick = performance.now();
-            loopId = requestAnimationFrame(gameLoop);
+            // Boot is handled by the async IIFE above (trySilentLogin → onLoginSuccess or login screen shown)
+            // generateItems is called once here so DB is populated before any render
+            generateItems();
         };
 
     </script>
