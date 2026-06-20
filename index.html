@@ -3382,7 +3382,7 @@
         // =============================================
         // AUTH SYSTEM (Firebase Auth REST API)
         // =============================================
-        const FB_API_KEY   = 'AIzaSyBzpCZ14duuPwnOWB7TFKbC8Q_90v3GMKU';
+        const FB_CFG = 'AIzaSyBzpCZ14duuPwnOWB7TFKbC8Q_90v3GMKU';
         const FB_AUTH_URL  = 'https://identitytoolkit.googleapis.com/v1/accounts';
         let currentUser    = null; // { uid, email, idToken }
         let isGuest        = false;
@@ -3410,8 +3410,8 @@
             btn.disabled = true; btn.innerText = '⏳';
 
             const endpoint = loginMode === 'login'
-                ? `${FB_AUTH_URL}:signInWithPassword?key=${FB_API_KEY}`
-                : `${FB_AUTH_URL}:signUp?key=${FB_API_KEY}`;
+                ? `${FB_AUTH_URL}:signInWithPassword?key=${FB_CFG}`
+                : `${FB_AUTH_URL}:signUp?key=${FB_CFG}`;
 
             try {
                 const res  = await fetch(endpoint, {
@@ -3555,7 +3555,7 @@
             const token = localStorage.getItem('msu_token');
             if(!uid || !email || !token) return false;
             try {
-                const res  = await fetch(`${FB_AUTH_URL}:lookup?key=${FB_API_KEY}`, {
+                const res  = await fetch(`${FB_AUTH_URL}:lookup?key=${FB_CFG}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ idToken: token })
