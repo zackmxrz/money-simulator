@@ -973,6 +973,66 @@
 
     <div class="notif-container" id="notif-box"></div>
 
+    <!-- ADMIN PANEL MODAL -->
+    <div id="modal-admin" class="modal" style="z-index:99999;">
+        <div class="modal-content" style="max-width:700px; max-height:85vh; overflow-y:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                <h2 style="color:var(--neg);">🔐 Panel de Administración</h2>
+                <button class="btn btn-danger" style="width:auto; padding:5px 14px;" onclick="closeAdminPanel()">✕</button>
+            </div>
+
+            <!-- Search player -->
+            <div class="card" style="margin-bottom:14px;">
+                <h3 style="margin-bottom:10px;">🔍 Buscar Jugador</h3>
+                <div style="display:flex; gap:8px; margin-bottom:8px;">
+                    <input type="text" id="admin-search-code" class="casino-input" placeholder="Código de trade del jugador (ej: AB1C2D)" style="flex:1;">
+                    <button class="btn btn-action" style="width:auto; padding:8px 16px;" onclick="adminSearchPlayer()">Buscar</button>
+                </div>
+                <div id="admin-player-info" style="font-size:13px; color:var(--text-sec);"></div>
+            </div>
+
+            <!-- Give money -->
+            <div class="card" style="margin-bottom:14px;" id="admin-actions" style="display:none;">
+                <h3 style="margin-bottom:10px;">💸 Dar Dinero</h3>
+                <div style="display:flex; gap:8px;">
+                    <input type="number" id="admin-money-amount" class="casino-input" placeholder="Cantidad" style="flex:1;">
+                    <button class="btn btn-success" style="width:auto; padding:8px 16px;" onclick="adminGiveMoney()">Dar</button>
+                </div>
+                <div id="admin-money-result" style="font-size:12px; margin-top:6px;"></div>
+            </div>
+
+            <!-- Give item -->
+            <div class="card" style="margin-bottom:14px;">
+                <h3 style="margin-bottom:10px;">📦 Dar Ítem</h3>
+                <div style="display:flex; gap:8px; margin-bottom:8px; flex-wrap:wrap;">
+                    <select id="admin-item-select" class="casino-input" style="flex:2; min-width:180px;"></select>
+                    <select id="admin-rarity-select" class="casino-input" style="flex:1; min-width:120px;"></select>
+                    <button class="btn btn-success" style="width:auto; padding:8px 16px;" onclick="adminGiveItem()">Dar</button>
+                </div>
+                <div id="admin-item-result" style="font-size:12px; margin-top:6px;"></div>
+            </div>
+
+            <!-- Set prestige -->
+            <div class="card" style="margin-bottom:14px;">
+                <h3 style="margin-bottom:10px;">⭐ Establecer Prestigio</h3>
+                <div style="display:flex; gap:8px;">
+                    <input type="number" id="admin-prestige-val" class="casino-input" placeholder="Nivel de prestigio" style="flex:1;" min="0">
+                    <button class="btn btn-action" style="width:auto; padding:8px 16px;" onclick="adminSetPrestige()">Aplicar</button>
+                </div>
+                <div id="admin-prestige-result" style="font-size:12px; margin-top:6px;"></div>
+            </div>
+
+            <!-- Broadcast notification -->
+            <div class="card">
+                <h3 style="margin-bottom:10px;">📢 Mensaje Global</h3>
+                <p style="font-size:12px; color:var(--text-sec); margin-bottom:8px;">Aparecerá como notificación a todos los jugadores que abran el juego.</p>
+                <input type="text" id="admin-broadcast-msg" class="casino-input" placeholder="Escribe el mensaje..." style="width:100%; margin-bottom:8px;">
+                <button class="btn btn-action" style="width:auto;" onclick="adminBroadcast()">📢 Enviar a todos</button>
+                <div id="admin-broadcast-result" style="font-size:12px; margin-top:6px;"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- EASTER EGG PIXEL -->
     <div id="secret-pixel" onclick="triggerPixelEasterEgg()" title="¿Qué haces por aquí abajo?"></div>
 
@@ -3475,6 +3535,7 @@
             }
             updateSettingsAccountUI();
             updateUI_Full();
+            checkBroadcast();
         }
 
         function playAsGuest() {
@@ -3658,6 +3719,175 @@
             lastTick = performance.now();
             loadGame();
             if(!loopId) loopId = requestAnimationFrame(gameLoop);
+        }
+
+        // =============================================
+        // ADMIN PANEL
+        // =============================================
+        const ADMIN_PASSWORD = 'zackmxrz_admin_2025'; // Cambia esto por tu contraseña
+        let adminTargetCode = null;
+        let adminKeySequence = [];
+        const ADMIN_COMBO = ['a','d','m','i','n']; // escribe "admin" en cualquier parte
+
+        // Listen for secret key combo
+        document.addEventListener('keydown', (e) => {
+            adminKeySequence.push(e.key.toLowerCase());
+            if(adminKeySequence.length > ADMIN_COMBO.length) adminKeySequence.shift();
+            if(JSON.stringify(adminKeySequence) === JSON.stringify(ADMIN_COMBO)) {
+                openAdminPanel();
+                adminKeySequence = [];
+            }
+        });
+
+        function openAdminPanel() {
+            if(!currentUser) { showNotification('Debes iniciar sesión para usar el admin.'); return; }
+            let pass = prompt('🔐 Contraseña de administrador:');
+            if(pass !== ADMIN_PASSWORD) { showNotification('❌ Contraseña incorrecta.'); return; }
+            // Populate selectors
+            let itemSel = document.getElementById('admin-item-select');
+            itemSel.innerHTML = '';
+            [...DB.items, ...(DB.secretItems||[])].forEach(i => {
+                itemSel.innerHTML += `<option value="${i.id}">${i.icon} ${i.name}</option>`;
+            });
+            let rarSel = document.getElementById('admin-rarity-select');
+            rarSel.innerHTML = '';
+            DB.rarities.forEach(r => {
+                rarSel.innerHTML += `<option value="${r.id}" style="color:${r.color}">${r.name}</option>`;
+            });
+            document.getElementById('admin-player-info').innerText = '';
+            document.getElementById('admin-money-result').innerText = '';
+            document.getElementById('admin-item-result').innerText = '';
+            document.getElementById('admin-prestige-result').innerText = '';
+            document.getElementById('admin-broadcast-result').innerText = '';
+            adminTargetCode = null;
+            document.getElementById('modal-admin').classList.add('show');
+        }
+
+        function closeAdminPanel() {
+            document.getElementById('modal-admin').classList.remove('show');
+            adminTargetCode = null;
+        }
+
+        async function adminSearchPlayer() {
+            let code = (document.getElementById('admin-search-code').value || '').trim().toUpperCase();
+            let infoEl = document.getElementById('admin-player-info');
+            if(!code) { infoEl.innerText = '❌ Introduce un código.'; infoEl.style.color='var(--neg)'; return; }
+            infoEl.innerText = '⏳ Buscando...'; infoEl.style.color = 'var(--text-sec)';
+            let data = await fbGet('/inventories/' + code);
+            if(!data) {
+                infoEl.innerHTML = `❌ Jugador con código <strong>${code}</strong> no encontrado o no ha abierto Trading.`;
+                infoEl.style.color = 'var(--neg)';
+                adminTargetCode = null;
+                return;
+            }
+            adminTargetCode = code;
+            let itemCount = data.items ? data.items.length : 0;
+            infoEl.innerHTML = `✅ Jugador <strong style="color:var(--accent)">${code}</strong> encontrado — ${itemCount} objetos en inventario.`;
+            infoEl.style.color = 'var(--pos)';
+        }
+
+        async function adminGetPlayerSave() {
+            // Load from Firebase users node by searching tradeCode
+            // Since we store by UID, we use the inventory path to find the player
+            // and then push trades to their inbox
+            return adminTargetCode;
+        }
+
+        async function adminGiveMoney() {
+            if(!adminTargetCode) { document.getElementById('admin-money-result').innerText = '❌ Busca un jugador primero.'; return; }
+            let amount = parseFloat(document.getElementById('admin-money-amount').value);
+            let resEl = document.getElementById('admin-money-result');
+            if(isNaN(amount) || amount <= 0) { resEl.innerText = '❌ Cantidad inválida.'; resEl.style.color='var(--neg)'; return; }
+            resEl.innerText = '⏳ Enviando...'; resEl.style.color='var(--text-sec)';
+            let ok = await fbPush('/trades/' + adminTargetCode, {
+                type: 'money', from: '👑 ADMIN', amount: amount, ts: Date.now()
+            });
+            if(ok) {
+                resEl.innerText = `✅ ${formatMoney(amount)} enviados a ${adminTargetCode}.`;
+                resEl.style.color = 'var(--pos)';
+                document.getElementById('admin-money-amount').value = '';
+            } else { resEl.innerText = '❌ Error de conexión.'; resEl.style.color='var(--neg)'; }
+        }
+
+        async function adminGiveItem() {
+            if(!adminTargetCode) { document.getElementById('admin-item-result').innerText = '❌ Busca un jugador primero.'; return; }
+            let itemId = document.getElementById('admin-item-select').value;
+            let rarityId = document.getElementById('admin-rarity-select').value;
+            let resEl = document.getElementById('admin-item-result');
+            let iInfo = getItemInfo(itemId);
+            let rInfo = DB.rarities.find(r => r.id === rarityId);
+            if(!iInfo || !rInfo) { resEl.innerText = '❌ Ítem o rareza inválida.'; resEl.style.color='var(--neg)'; return; }
+            let val = iInfo.baseVal * rInfo.valMult;
+            resEl.innerText = '⏳ Enviando...'; resEl.style.color='var(--text-sec)';
+            let ok = await fbPush('/trades/' + adminTargetCode, {
+                type: 'item_delivered', from: '👑 ADMIN',
+                items: [{ uid: Date.now(), id: itemId, rarityId: rarityId, val: val,
+                    name: iInfo.name, icon: iInfo.icon, rarityName: rInfo.name, rarityColor: rInfo.color }],
+                ts: Date.now()
+            });
+            if(ok) {
+                resEl.innerText = `✅ ${iInfo.icon} ${iInfo.name} [${rInfo.name}] enviado a ${adminTargetCode}.`;
+                resEl.style.color = 'var(--pos)';
+            } else { resEl.innerText = '❌ Error de conexión.'; resEl.style.color='var(--neg)'; }
+        }
+
+        async function adminSetPrestige() {
+            if(!adminTargetCode) { document.getElementById('admin-prestige-result').innerText = '❌ Busca un jugador primero.'; return; }
+            let val = parseInt(document.getElementById('admin-prestige-val').value);
+            let resEl = document.getElementById('admin-prestige-result');
+            if(isNaN(val) || val < 0) { resEl.innerText = '❌ Valor inválido.'; resEl.style.color='var(--neg)'; return; }
+            // Send as a special trade type
+            resEl.innerText = '⏳ Enviando...'; resEl.style.color='var(--text-sec)';
+            let ok = await fbPush('/trades/' + adminTargetCode, {
+                type: 'admin_prestige', from: '👑 ADMIN', prestige: val, ts: Date.now()
+            });
+            if(ok) {
+                resEl.innerText = `✅ Prestigio ${val} enviado a ${adminTargetCode}. El jugador debe aceptarlo en Trading.`;
+                resEl.style.color = 'var(--pos)';
+            } else { resEl.innerText = '❌ Error de conexión.'; resEl.style.color='var(--neg)'; }
+        }
+
+        async function adminBroadcast() {
+            let msg = document.getElementById('admin-broadcast-msg').value.trim();
+            let resEl = document.getElementById('admin-broadcast-result');
+            if(!msg) { resEl.innerText = '❌ Escribe un mensaje.'; resEl.style.color='var(--neg)'; return; }
+            resEl.innerText = '⏳ Enviando...'; resEl.style.color='var(--text-sec)';
+            let ok = await fbSet('/broadcast', { msg, ts: Date.now(), from: '👑 ADMIN' });
+            if(ok) {
+                resEl.innerText = '✅ Mensaje enviado a todos los jugadores.';
+                resEl.style.color = 'var(--pos)';
+                document.getElementById('admin-broadcast-msg').value = '';
+            } else { resEl.innerText = '❌ Error de conexión.'; resEl.style.color='var(--neg)'; }
+        }
+
+        // Check broadcast on load and every 2 min
+        async function checkBroadcast() {
+            let data = await fbGet('/broadcast');
+            if(!data || !data.msg || !data.ts) return;
+            let lastSeen = parseInt(localStorage.getItem('msu_last_broadcast') || '0');
+            if(data.ts > lastSeen) {
+                localStorage.setItem('msu_last_broadcast', data.ts);
+                setTimeout(() => showGenModal('📢 Mensaje del Admin', data.msg), 2000);
+            }
+        }
+        setInterval(checkBroadcast, 120000);
+
+        // Handle admin_prestige trade type in acceptTrade
+        // (patch into existing acceptTrade)
+        const _origAcceptTrade = acceptTrade;
+        async function acceptTrade(key) {
+            let t = pendingTradesMap[key];
+            if(t && t.type === 'admin_prestige') {
+                await fbDelete('/trades/' + getMyTradeCode() + '/' + key);
+                delete pendingTradesMap[key];
+                game.prestige = t.prestige;
+                game.prestigeMult = t.prestige * 0.10;
+                saveGame();
+                showNotification(`⭐ Prestigio establecido a ${t.prestige} por el Admin!`);
+                checkIncomingTrades();
+                return;
+            }
+            return _origAcceptTrade(key);
         }
 
         // --- Global Timers
